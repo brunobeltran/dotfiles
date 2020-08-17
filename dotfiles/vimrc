@@ -1,0 +1,201 @@
+" Bruno Beltran's [n]vimrc
+"
+" Rules about mappings:
+"   1) (almost) never overwrite vanilla vim mappings
+"   2) additional simple text-editing commands can be mapped without leader
+"   3) commands that rely on external programs/most plugins should be mapped
+"   with leader
+"   4) commands should be grouped to be easy to use in vim's noun-verb-adverb[s]
+"   convention. e.g. do not do anything that would require a count to go at the
+"   end, and group commands so that they feel "composed" even if they're not,
+"   like <leader>ga, <leader>gs, <leader>gc, for :Gitadd/status/commit.
+
+" {{{ ALL YOUR PLUGINS ARE BELONG TO ME
+" Use vim-plug for plugins
+set nocompatible
+filetype off
+call plug#begin('~/.vim/plugged')
+Plug 'altercation/vim-colors-solarized'   " color scheme
+Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
+Plug 'bling/vim-airline'      " a powerline thingy for status on bottom/top
+Plug 'vim-airline/vim-airline-themes'      " a powerline thingy for status on bottom/top
+Plug 'brunobeltran/vim-dragvisuals' " move visual selections <Up>/.../<Right>
+Plug 'brunobeltran/vim-vmath' " fork of '++' summarizer for numbers
+Plug 'christoomey/vim-tmux-navigator'     " <A-hjkl> between vimdows and tpanes
+Plug 'davidhalter/jedi-vim'   " powerful python autcompletion/docs w/o YouCompleteMe
+Plug 'flazz/vim-colorschemes' " lots of colorschemes
+Plug 'eagletmt/ghcmod-vim', { 'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
+Plug 'eagletmt/neco-ghc', {'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
+Plug 'Shougo/vimproc.vim', {'for': 'haskell', 'do': 'make'}
+Plug 'godlygeek/tabular'      " :Tabularize /<character to align by>
+Plug 'honza/vim-snippets'     " various pre-made snippets for UltiSnips
+Plug 'kballard/vim-swift', { 'for' : 'swift' }    " filetype, make commands, syntastic for Swift
+Plug 'Lokaltog/vim-easymotion'            " skip around, <leader><leader>*
+Plug 'majutsushi/tagbar'      " browse C/C++ tag files in split
+Plug 'mbbill/undotree'        " visualize Vim's undo tree
+Plug 'mhinz/vim-startify'     " TODO: setup after all components are in place for better landing screen
+Plug 'mileszs/ack.vim'        " drop grep results into quickfix list
+Plug 'NLKNguyen/papercolor-theme'         " another color theme
+Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
+Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
+Plug 'scrooloose/syntastic'   " put externally checked errors in quickfix list
+Plug 'SirVer/ultisnips'       " autocomplete common long snippets
+Plug 'tomasr/molokai'         " nice color scheme
+Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
+Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
+Plug 'tpope/vim-endwise'      " complete if...end blocks and similar
+Plug 'tpope/vim-fugitive'     " git wrapper, <leader>g*
+Plug 'tpope/vim-git'          " syntax/indent/etc files for git
+Plug 'tpope/vim-obsession'    " save current open windows, folds, etc
+Plug 'tpope/vim-repeat'       " make '.' work as expected for plugin maps
+Plug 'tpope/vim-speeddating'  " make <C-x> and <C-a> work on dates
+Plug 'tpope/vim-surround'     " 's[urround]' direct object, e.g. ds, cs, ys
+Plug 'tpope/vim-vinegar'      " make netrw not suck, 'I' to toggle
+Plug 'vim-scripts/indentpython.vim'       " PEP8-ier continued line indentation
+Plug 'vim-scripts/matchit.zip'
+Plug 'vim-scripts/utl.vim'    " Open links from Vim!
+" Required after pulling in all the plugins
+call plug#end()
+filetype plugin indent on
+" }}}
+
+"{{{ => source non external-program-dependent, non plugin-dependent configs
+
+" make the config files automatically reload config on write
+augroup autoreload
+    autocmd!
+    autocmd BufWritePost .vimrc source %
+    autocmd BufWritePost config.vim source ~/.vim/config.vim
+    autocmd BufWritePost file_specific.vim source ~/.vim/file_specific.vim
+    autocmd BufWritePost .vimrc,config.vim,file_specific.vim
+augroup END
+
+source ~/.vim/config.vim
+source ~/.vim/file_specific.vim
+
+"}}}
+
+"{{{ => Plugin Configuration
+
+"{{{ => Fugitive (git bindings)
+nnoremap <space>ga :Git add %:p<CR><CR>
+nnoremap <space>gs :Gstatus<CR>
+nnoremap <space>gc :Gcommit -v -q<CR>
+nnoremap <space>gt :Gcommit -v -q %:p<CR>
+nnoremap <space>gd :Gdiff<CR>
+nnoremap <space>ge :Gedit<CR>
+nnoremap <space>gr :Gread<CR>
+nnoremap <space>gw :Gwrite<CR><CR>
+nnoremap <space>gl :silent! Glog<CR>:bot copen<CR>
+nnoremap <space>gg :Ggrep<Space>
+nnoremap <space>gm :Gmove<Space>
+nnoremap <space>gb :Git branch<Space>
+nnoremap <space>go :Git checkout<Space>
+nnoremap <space>gps :Dispatch! git push<CR>
+nnoremap <space>gpl :Dispatch! git pull<CR>
+"}}}
+
+"{{{ => Syntastic (syntax checker)
+" let g:syntastic_python_checkers = ['pyflakes3', 'pylint']
+let g:syntastic_python_checkers = ['pyflakes3']
+" known bug in pylint caused by dynamically created functions
+let g:syntastic_python_pylint_args = "--extension-pkg-whitelist=numpy"
+" don't check for errors on exit
+let g:syntastic_check_on_wq = 0
+" always populate loc list
+let g:syntastic_always_populate_loc_list = 1
+"}}}
+
+"{{{ => Airline (fancy statusline)
+" airline is special, usually requires patched fonts
+" Plugin 'bling/vim-airline'
+let g:airline#extensions#tabline#enabled=1
+let g:airline#extensions#tabline#buffer_nr_show=1
+let g:airline_theme="luna"
+set laststatus=2
+let g:airline_powerline_fonts = 1
+set term=screen-256color
+colorscheme desert
+"set encoding=utf-8
+"set guifont=Fira\ Mono\ Medium\ for\ Powerline:h9
+"}}}
+
+"{{{ => Easymotion (avoid repeating h,j,k,l,n,N)
+"
+
+" Recently, <Leader><Leader> was made the plugin-wide prefix for the default
+" mappings, obsoleting my manual mappings below.
+" remove <leader> to use for search by default
+let g:easymotion_do_mapping=0
+map  <Leader><Leader>/ <Plug>(easymotion-sn)
+omap <Leader><Leader>/ <Plug>(easymotion-tn)
+vmap <Leader><Leader>/ <Plug>(easymotion-tn)
+map  <Leader><Leader>n <Plug>(easymotion-next)
+map  <Leader><Leader>N <Plug>(easymotion-prev)
+" avoid repeated hjkl input
+map <Leader><Leader>l <Plug>(easymotion-lineforward)
+map <Leader><Leader>j <Plug>(easymotion-j)
+map <Leader><Leader>k <Plug>(easymotion-k)
+map <Leader><Leader>h <Plug>(easymotion-linebackward)
+let g:EasyMotion_startofline = 0
+" smartcase is nice, so only match case if you include an uppercase letter
+let g:EasyMotion_smartcase = 1
+"}}}
+
+
+"{{{ => Ack.vim (faster than vimgrep)
+" this plugin already intelligently only loads itself if Ack is present on the
+" system, but if we have ag, we want to use that instead, since it's faster.
+if executable('ag')
+    let g:ackprg = 'ag --vimgrep'
+endif
+"}}}
+
+
+"{{{ => ctags (tag file generator)
+" where to look for tags. look for files called tags,ctags,.tags,.ctags starting
+" in the current file's directory and recursively going up the filesystem,
+" stopping if the home directory is encountered
+set tags+=~/.vim/python_tags,~/.vim/cstdtags,./tags;$HOME,./ctags;$HOME,./.tags;$HOME,./.ctags;$HOME
+" we should probably have some regularly updated global python tags and global
+" ctags that know about the system-installed libraries
+"TODO
+"}}}
+
+"{{{ => Ropevim (Python-Rope Refactoring Library Bindings)
+let ropevim_local_prefix="<leader>r"
+let ropevim_global_prefix="<leader>rp"
+let ropevim_enable_shortcuts=0
+"}}}
+
+"{{{ => UltiSnips (auto-type common snippets with fill-able fields)
+" MAD SNIPPETS, YO
+" If you want :UltiSnipsEdit to split your window.
+" let g:UltiSnipsEditSplit="vertical"
+let g:UltiSnipsSnippetsDir='~/.vim/UltiSnips'
+let g:UltiSnipsSnippetDirectories=['UltiSnips']
+"" Ultisnips
+let g:UltiSnipsExpandTrigger="<c-j>"
+let g:UltiSnipsJumpForwardTrigger="<c-j>"
+let g:UltiSnipsJumpBackwardTrigger="<c-m>"
+let g:UltiSnipsListSnippets="<c-l>"
+
+"{{{ => DragVisuals (move visual boxes around with arrows)
+" from Damian Conway
+"====[ dragvisuals ]====================
+vmap  <expr>  <LEFT>   DVB_Drag('left')
+vmap  <expr>  <RIGHT>  DVB_Drag('right')
+vmap  <expr>  <DOWN>   DVB_Drag('down')
+vmap  <expr>  <UP>     DVB_Drag('up')
+vmap  <expr>  D        DVB_Duplicate()
+" Remove any introduced trailing whitespace after moving...
+let g:DVB_TrimWS=1
+"}}}
+
+"{{{ => VMath (stat summary of selections & columns)
+"====[ vmath ]====================
+vmap <expr>  ++  VMATH_YankAndAnalyse()
+nmap         ++  vip++
+"}}}
+
+

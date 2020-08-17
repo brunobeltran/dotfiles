@@ -1,0 +1,15 @@
+# for sanity
+alias ls='ls --color=auto'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+
+# for a beep
+alias beep='play -qn synth 1 sine 800 vol 1 '
+
+# replacement for xclip (needs wl-clipboard)
+alias pbcopy='wl-copy'
+alias pbpaste='wl-paste'
+
+# makes all aliases accessible via sudo
+alias sudo='sudo '
