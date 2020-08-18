@@ -308,7 +308,7 @@ nnoremap q: :q
 command! Q q
 
 " catchall cleanup
-nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>
+nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>:call DeleteTrailingWS()<cr>:w<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
