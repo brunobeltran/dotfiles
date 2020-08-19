@@ -30,7 +30,7 @@ if [ -f ~/.set_path ]; then
 fi
 
 # set a basic prompt
-PS1='[\u@\h \W]\$ '
+PS1='[\u@\h \W]\n\$ '
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
