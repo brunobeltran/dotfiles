@@ -32,6 +32,11 @@ fi
 # set a basic prompt
 PS1='[\u@\h \W]\n\$ '
 
+# and if we have liquidprompt, set and even better prompt
+[[ $- = *i* ]] \
+    && [[ -f "/home/bbeltr1/developer/liquidprompt/liquidprompt" ]] \
+    && source /home/bbeltr1/developer/liquidprompt/liquidprompt
+
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/bbeltr1/.miniconda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
