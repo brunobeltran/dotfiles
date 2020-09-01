@@ -39,7 +39,6 @@ Plug 'NLKNguyen/papercolor-theme'         " another color theme
 Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
 Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
 Plug 'scrooloose/syntastic'   " put externally checked errors in quickfix list
-Plug 'SirVer/ultisnips'       " autocomplete common long snippets
 Plug 'tomasr/molokai'         " nice color scheme
 Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
 Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
@@ -76,6 +75,10 @@ source ~/.vim/file_specific.vim
 "}}}
 
 "{{{ => Plugin Configuration
+
+"{{{ => Startify (splash screen)
+let g:nerdtree_tabs_open_on_console_startup = 0
+"}}}
 
 "{{{ => Fugitive (git bindings)
 nnoremap <space>ga :Git add %:p<CR><CR>
@@ -179,6 +182,7 @@ let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-j>"
 let g:UltiSnipsJumpBackwardTrigger="<c-m>"
 let g:UltiSnipsListSnippets="<c-l>"
+"}}}
 
 "{{{ => DragVisuals (move visual boxes around with arrows)
 " from Damian Conway
@@ -198,4 +202,5 @@ vmap <expr>  ++  VMATH_YankAndAnalyse()
 nmap         ++  vip++
 "}}}
 
+"}}}
 
