@@ -21,8 +21,8 @@ Plug 'bling/vim-airline'      " a powerline thingy for status on bottom/top
 Plug 'vim-airline/vim-airline-themes'      " a powerline thingy for status on bottom/top
 Plug 'brunobeltran/vim-dragvisuals' " move visual selections <Up>/.../<Right>
 Plug 'brunobeltran/vim-vmath' " fork of '++' summarizer for numbers
-Plug 'christoomey/vim-tmux-navigator'     " <A-hjkl> between vimdows and tpanes
-Plug 'davidhalter/jedi-vim'   " powerful python autcompletion/docs w/o YouCompleteMe
+"Plug 'christoomey/vim-tmux-navigator'     " <A-hjkl> between vimdows and tpanes
+"Plug 'davidhalter/jedi-vim'   " powerful python autcompletion/docs w/o YouCompleteMe
 Plug 'flazz/vim-colorschemes' " lots of colorschemes
 Plug 'eagletmt/ghcmod-vim', { 'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
 Plug 'eagletmt/neco-ghc', {'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
@@ -100,9 +100,9 @@ nnoremap <space>gpl :Dispatch! git pull<CR>
 
 "{{{ => Syntastic (syntax checker)
 " let g:syntastic_python_checkers = ['pyflakes3', 'pylint']
-let g:syntastic_python_checkers = ['pyflakes3']
+let g:syntastic_python_checkers = ['flake8']
 " known bug in pylint caused by dynamically created functions
-let g:syntastic_python_pylint_args = "--extension-pkg-whitelist=numpy"
+let g:syntastic_python_pylint_args = "--docstring-convention=all"
 " don't check for errors on exit
 let g:syntastic_check_on_wq = 0
 " always populate loc list
