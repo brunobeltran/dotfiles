@@ -40,6 +40,7 @@ done
 # config is an entire subdirectory, but we don't want
 # to keep it all in the repo, just particular parts,
 # so we individually symlink its components
+mkdir -p "$HOME/.config"
 for file in `ls dotfiles/config`; do
     linkname="$HOME/.config/$file"
     target="$MY_PATH/dotfiles/config/$file"
