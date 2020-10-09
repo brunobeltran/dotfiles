@@ -20,6 +20,7 @@ set $atem 'Unknown BMD HDMI 0x00000001'
 set $xps13 'Sharp Corporation 0x1449 0x00000000'
 set $lilly_monitor 'Dell Inc. DELL U2518D 0WG2J846BPBL'
 set $amy_kepesh_monitor 'ViewSonic Corporation VA2246 Series V1W180161036'
+set $connor_wide_monitor 'Unknown Sceptre P30 0000000000000'
 # Your preferred terminal emulator
 set $term alacritty
 # Your preferred application launcher
@@ -50,7 +51,8 @@ output $atem {
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 output $xps13 {
-    pos 2560 0 res 1920x1080
+    # (2560 - 1080)/2, to center below $connor_wide_monitor
+    pos 740 1080 res 1920x1080
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 output $lilly_monitor {
@@ -60,6 +62,10 @@ output $lilly_monitor {
 output $amy_kepesh_monitor {
     pos 1480 0 res 2560x1440
     # pos 2560 -1080 res 1920x1080
+    bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+}
+output $connor_wide_monitor {
+    pos 0 0 res 2560x1080
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 
