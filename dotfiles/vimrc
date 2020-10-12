@@ -15,7 +15,8 @@
 set nocompatible
 filetype off
 call plug#begin('~/.vim/plugged')
-Plug 'altercation/vim-colors-solarized'   " color scheme
+"Plug 'altercation/vim-colors-solarized'   " color scheme
+"Plug 'morhetz/gruvbox'    " color scheme
 Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
 Plug 'bling/vim-airline'      " a powerline thingy for status on bottom/top
 Plug 'vim-airline/vim-airline-themes'      " a powerline thingy for status on bottom/top
@@ -118,7 +119,7 @@ let g:airline_theme="luna"
 set laststatus=2
 let g:airline_powerline_fonts = 1
 set term=screen-256color
-colorscheme desert
+colorscheme molokai
 "set encoding=utf-8
 "set guifont=Fira\ Mono\ Medium\ for\ Powerline:h9
 "}}}
