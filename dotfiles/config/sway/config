@@ -52,6 +52,8 @@ output $atem {
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 output $xps13 {
+    # regular position, to right of desktop monitor
+    # pos 1920 0 res 1920x1080
     # (2560 - 1080)/2, to center below $connor_wide_monitor
     pos 740 1080 res 1920x1080
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
