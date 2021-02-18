@@ -14,6 +14,8 @@ filetype indent on
 " Set to auto read when a file is changed from the outside
 set autoread
 
+nnoremap <C-@> :call system("wl-copy", @")<CR>
+
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
 nnoremap <Space> <Nop>
@@ -196,9 +198,6 @@ inoremap <C-D> <Right><Backspace>
 inoremap <C-F> <Right>
 inoremap <C-B> <Left>
 
-" Disable highlight when <leader><cr> is pressed
-map <silent> <leader><cr> :noh<cr>
-
 " Alt way to move between windows
 "map <C-j> <C-W>j
 "map <C-k> <C-W>k
@@ -309,6 +308,7 @@ command! Q q
 
 " catchall cleanup
 nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>:call DeleteTrailingWS()<cr>:w<cr>:edit<cr>
+nnoremap <leader><leader><cr> <C-c>:noh<cr>:redraw!<cr>:%s/\t/    /g<cr>:w<cr>:edit<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
