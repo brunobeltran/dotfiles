@@ -18,28 +18,33 @@ call plug#begin('~/.vim/plugged')
 "Plug 'altercation/vim-colors-solarized'   " color scheme
 "Plug 'morhetz/gruvbox'    " color scheme
 Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
+Plug 'AndrewRadev/tagalong.vim'  " change surrounding html tag
+Plug 'ap/vim-css-color'       " see CSS colors in-line
 Plug 'bling/vim-airline'      " a powerline thingy for status on bottom/top
 Plug 'vim-airline/vim-airline-themes'      " a powerline thingy for status on bottom/top
 Plug 'brunobeltran/vim-dragvisuals' " move visual selections <Up>/.../<Right>
 Plug 'brunobeltran/vim-vmath' " fork of '++' summarizer for numbers
 "Plug 'christoomey/vim-tmux-navigator'     " <A-hjkl> between vimdows and tpanes
 "Plug 'davidhalter/jedi-vim'   " powerful python autcompletion/docs w/o YouCompleteMe
+Plug 'dense-analysis/ale'     " linter
 Plug 'flazz/vim-colorschemes' " lots of colorschemes
 Plug 'eagletmt/ghcmod-vim', { 'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
 Plug 'eagletmt/neco-ghc', {'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
 Plug 'Shougo/vimproc.vim', {'for': 'haskell', 'do': 'make'}
 Plug 'godlygeek/tabular'      " :Tabularize /<character to align by>
 Plug 'honza/vim-snippets'     " various pre-made snippets for UltiSnips
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } } " fast fuzzy file search
 Plug 'kballard/vim-swift', { 'for' : 'swift' }    " filetype, make commands, syntastic for Swift
 Plug 'Lokaltog/vim-easymotion'            " skip around, <leader><leader>*
 Plug 'majutsushi/tagbar'      " browse C/C++ tag files in split
+Plug 'mattn/emmet-vim'        " expanding html tags
 Plug 'mbbill/undotree'        " visualize Vim's undo tree
 Plug 'mhinz/vim-startify'     " TODO: setup after all components are in place for better landing screen
 Plug 'mileszs/ack.vim'        " drop grep results into quickfix list
 Plug 'NLKNguyen/papercolor-theme'         " another color theme
 Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
 Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
-Plug 'scrooloose/syntastic'   " put externally checked errors in quickfix list
+" Plug 'scrooloose/syntastic'   " put externally checked errors in quickfix list
 Plug 'tomasr/molokai'         " nice color scheme
 Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
 Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
@@ -61,14 +66,15 @@ filetype plugin indent on
 
 "{{{ => source non external-program-dependent, non plugin-dependent configs
 
-" make the config files automatically reload config on write
-augroup autoreload
-    autocmd!
-    autocmd BufWritePost .vimrc source %
-    autocmd BufWritePost config.vim source ~/.vim/config.vim
-    autocmd BufWritePost file_specific.vim source ~/.vim/file_specific.vim
-    autocmd BufWritePost .vimrc,config.vim,file_specific.vim
-augroup END
+" this causes problems with terminal colors for some reason
+" " make the config files automatically reload config on write
+" augroup autoreload
+"     autocmd!
+"     autocmd BufWritePost .vimrc source %
+"     autocmd BufWritePost config.vim source ~/.vim/config.vim
+"     autocmd BufWritePost file_specific.vim source ~/.vim/file_specific.vim
+"     autocmd BufWritePost .vimrc,config.vim,file_specific.vim
+" augroup END
 
 source ~/.vim/config.vim
 source ~/.vim/file_specific.vim
@@ -82,33 +88,60 @@ let g:nerdtree_tabs_open_on_console_startup = 0
 "}}}
 
 "{{{ => Fugitive (git bindings)
-nnoremap <space>ga :Git add %:p<CR><CR>
-nnoremap <space>gs :Gstatus<CR>
-nnoremap <space>gc :Gcommit -v -q<CR>
-nnoremap <space>gt :Gcommit -v -q %:p<CR>
-nnoremap <space>gd :Gdiff<CR>
-nnoremap <space>ge :Gedit<CR>
-nnoremap <space>gr :Gread<CR>
-nnoremap <space>gw :Gwrite<CR><CR>
-nnoremap <space>gl :silent! Glog<CR>:bot copen<CR>
-nnoremap <space>gg :Ggrep<Space>
-nnoremap <space>gm :Gmove<Space>
-nnoremap <space>gb :Git branch<Space>
-nnoremap <space>go :Git checkout<Space>
-nnoremap <space>gps :Dispatch! git push<CR>
-nnoremap <space>gpl :Dispatch! git pull<CR>
+nnoremap <leader>ga :Git add %:p<CR><CR>
+nnoremap <leader>gs :Gstatus<CR>
+nnoremap <leader>gc :Gcommit -v -q<CR>
+nnoremap <leader>gt :Gcommit -v -q %:p<CR>
+nnoremap <leader>gd :Gdiff<CR>
+nnoremap <leader>ge :Gedit<CR>
+nnoremap <leader>gr :Gread<CR>
+nnoremap <leader>gw :Gwrite<CR><CR>
+nnoremap <leader>gl :silent! Glog<CR>:bot copen<CR>
+nnoremap <leader>gg :Ggrep<Space>
+nnoremap <leader>gm :Gmove<Space>
+nnoremap <leader>gb :Git branch<Space>
+nnoremap <leader>go :Git checkout<Space>
+nnoremap <leader>gps :Dispatch! git push<CR>
+nnoremap <leader>gpl :Dispatch! git pull<CR>
 "}}}
 
-"{{{ => Syntastic (syntax checker)
-" let g:syntastic_python_checkers = ['pyflakes3', 'pylint']
-let g:syntastic_python_checkers = ['flake8']
-" known bug in pylint caused by dynamically created functions
-let g:syntastic_python_pylint_args = "--docstring-convention=all"
-" don't check for errors on exit
-let g:syntastic_check_on_wq = 0
-" always populate loc list
-let g:syntastic_always_populate_loc_list = 1
+"{{{ Ale (linter)
+let g:ale_fixers = {
+            \   '*': ['remove_trailing_lines', 'trim_whitespace'],
+            \   'html': ['prettier'],
+            \   'css': ['stylelint'],
+            \   'vue': ['prettier'],
+            \   'python': ['black', 'isort'],
+            \}
+let g:ale_linters = {
+            \   'html': ['htmlhint'],
+            \   'css': ['stylelint'],
+            \   'vue': ['eslint'],
+            \   'javascript': ['eslint'],
+            \   'python': ['flake8'],
+            \}
+let g:ale_linters_explicit = 1
+let g:ale_fix_on_save = 1
+let g:ale_completion_enabled = 1
+let g:ale_completion_autoimport = 1
+
+let g:ale_sign_error = '❌'
+let g:ale_sign_warning = '⚠️'
+
+set omnifunc=ale#completion#OmniFunc
+
 "}}}
+
+""{{{ => Syntastic DEPRECATED in favor of Ale (syntax checker)
+"" let g:syntastic_python_checkers = ['pyflakes3', 'pylint']
+"let g:syntastic_python_checkers = ['flake8']
+"" known bug in pylint caused by dynamically created functions
+"let g:syntastic_python_pylint_args = "--docstring-convention=all"
+"" don't check for errors on exit
+"let g:syntastic_check_on_wq = 0
+"" always populate loc list
+"let g:syntastic_always_populate_loc_list = 1
+""}}}
 
 "{{{ => Airline (fancy statusline)
 " airline is special, usually requires patched fonts
@@ -203,5 +236,16 @@ vmap <expr>  ++  VMATH_YankAndAnalyse()
 nmap         ++  vip++
 "}}}
 
+"{{{ => Emmet (html expansion)
+
+" " enable emmet only in file_specific.vim
+" let g:user_emmet_install_global = 0
+
 "}}}
 
+"{{{ => Tagalong (html tag auto match changes)
+let g:tagalong_verbose = 1
+let g:tagalong_additional_filetypes = ['vue']
+"}}}
+
+"}}}

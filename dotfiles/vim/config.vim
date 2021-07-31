@@ -1,6 +1,7 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 " Sets how many lines of history VIM has to remember
 set history=10000
 
@@ -279,6 +280,14 @@ map <leader>sn ]s
 map <leader>sp [s
 map <leader>sa zg
 map <leader>s? z=
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Turn backups on
+"    means that you can recover file after deletion if you
+"    don't open it again...
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set backup
+set backupdir=~/.vim/temp_dirs/backups
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Turn persistent undo on

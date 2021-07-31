@@ -33,17 +33,37 @@ set $menu j4-dmenu-desktop --dmenu='bemenu -i --nb "#3f3f3f" --nf "#dcdccc" --fn
 #
 # You can get the names of your outputs by running: swaymsg -t get_outputs
 
-# my/Carson's 4k screen
+# outputs of Desktop
+# LEFT
+output HDMI-A-1 {
+    # 840 so we can keep lg4k at x=1920 with dell monitor rotated
+    pos 840 0 res 1920x1080
+    transform 270
+    bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+}
+# RIGHT
+output DP-2 {
+    # to the right of lg4k, see note there for why y=685
+    pos 5760 685 res 1920x1080
+    bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+}
+
+# named outputs
+# (including center destop monitor)
+# CENTER
 output $lg4k {
-    pos 0 0 res 3480x2160
-    scale 2
+    # phenomenologically, 685 lines up the "mouse over-able" region of lg4k
+    # with the rotated Dell monitor on HDMI-A-1 when the bottom edges of the
+    # screens are aligned
+    pos 1920 685 res 3840x2160
+    scale 1
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 # my old backup monitor
 output $asus1920 {
     # notice x-pos must take scale=2 of $lg4k if on the left
     pos 1920 0 res 1920x1080
-    transform 270
+    # transform 270
     # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
@@ -69,6 +89,11 @@ output $amy_kepesh_monitor {
 }
 output $connor_wide_monitor {
     pos 0 0 res 2560x1080
+    bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+}
+output $xps13 {
+    # (2560 - 1080)/2, to center below $connor_wide_monitor
+    pos 740 1080 res 1920x1080
     bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 }
 
