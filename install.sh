@@ -57,6 +57,8 @@ for file in `ls dotfiles/config`; do
     ln -s "$target" "$linkname"
 done
 
+printf "NOTE: YOU HAVE TO MANUALLY RUN :PlugUpdate in Vim!\n"
+printf "\n"
 printf "This installer can also install some dependencies (e.g. fonts for\n"
 printf "powerline, etc.), would you like to continue?\n"
 printf "(Type 'please yes' to continue): "
