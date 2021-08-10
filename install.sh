@@ -1,6 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
+please_yes () {
+    read please yes
+    if [[ ( ! -v please ) || "$please" != "please" || \
+        ( ! -v yes    ) || "$yes"    != "yes"     ]]; then
+        printf "Quitting...no changes were made.\n"
+        exit 2
+    fi
+}
+
+
 # safely get install.sh's directory (and, by proxy, the repo's directory)
 MY_PATH="`dirname \"$BASH_SOURCE\"`"
 MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
@@ -15,12 +25,7 @@ fi
 printf "About to replace the dotfiles in \n\t\t$HOME\n"
 printf "with their equivalents in \n\t\t$MY_PATH/dotfiles\n\n"
 printf "Are you sure? (Type 'please yes' to continue): "
-read please yes
-if [[ ( ! -v please ) || "$please" != "please" || \
-      ( ! -v yes    ) || "$yes"    != "yes"     ]]; then
-    printf "Quitting...no changes were made.\n"
-    exit 2
-fi
+please_yes
 
 # now thanks to directory's naming convention, we can drop in symlinks as needed
 for file in `ls dotfiles`; do
@@ -50,4 +55,13 @@ for file in `ls dotfiles/config`; do
     fi
     printf "Creating symlink: %s -> %s\n" $linkname $target
     ln -s "$target" "$linkname"
+done
+
+printf "This installer can also install some dependencies (e.g. fonts for\n"
+printf "powerline, etc.), would you like to continue?\n"
+printf "(Type 'please yes' to continue): "
+please_yes
+
+for helper in dependencies; do
+    bash "${helper}"
 done
