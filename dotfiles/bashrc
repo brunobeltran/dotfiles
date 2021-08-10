@@ -28,6 +28,9 @@ fi
 if [ -f ~/.set_path ]; then
     . ~/.set_path
 fi
+if [ -f ~/.bash_completion ]; then
+    . ~/.bash_completion
+fi
 
 # set a basic prompt
 PS1='[\u@\h \W]\n\$ '
