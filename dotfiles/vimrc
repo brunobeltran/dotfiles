@@ -15,8 +15,6 @@
 set nocompatible
 filetype off
 call plug#begin('~/.vim/plugged')
-"Plug 'altercation/vim-colors-solarized'   " color scheme
-"Plug 'morhetz/gruvbox'    " color scheme
 Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
 Plug 'AndrewRadev/tagalong.vim'  " change surrounding html tag
 Plug 'ap/vim-css-color'       " see CSS colors in-line
@@ -41,11 +39,8 @@ Plug 'mattn/emmet-vim'        " expanding html tags
 Plug 'mbbill/undotree'        " visualize Vim's undo tree
 Plug 'mhinz/vim-startify'     " TODO: setup after all components are in place for better landing screen
 Plug 'mileszs/ack.vim'        " drop grep results into quickfix list
-Plug 'NLKNguyen/papercolor-theme'         " another color theme
 Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
 Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
-" Plug 'scrooloose/syntastic'   " put externally checked errors in quickfix list
-Plug 'tomasr/molokai'         " nice color scheme
 Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
 Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
 Plug 'tpope/vim-endwise'      " complete if...end blocks and similar
@@ -59,6 +54,11 @@ Plug 'tpope/vim-vinegar'      " make netrw not suck, 'I' to toggle
 Plug 'vim-scripts/indentpython.vim'       " PEP8-ier continued line indentation
 Plug 'vim-scripts/matchit.zip'
 Plug 'vim-scripts/utl.vim'    " Open links from Vim!
+"Plug 'altercation/vim-colors-solarized'   " color scheme
+"Plug 'morhetz/gruvbox'    " color scheme
+Plug 'flazz/vim-colorschemes' " lots of colorschemes
+Plug 'NLKNguyen/papercolor-theme'         " another color theme
+Plug 'tomasr/molokai'         " nice color scheme
 " Required after pulling in all the plugins
 call plug#end()
 filetype plugin indent on
@@ -148,9 +148,9 @@ set omnifunc=ale#completion#OmniFunc
 " Plugin 'bling/vim-airline'
 let g:airline#extensions#tabline#enabled=1
 let g:airline#extensions#tabline#buffer_nr_show=1
-let g:airline_theme="luna"
+let g:airline_theme="molokai"
 set laststatus=2
-let g:airline_powerline_fonts = 1
+" let g:airline_powerline_fonts = 1
 set term=screen-256color
 colorscheme molokai
 "set encoding=utf-8

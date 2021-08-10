@@ -1,5 +1,10 @@
-
 augroup filespecificconfig
+
+"{{{ => Terraform-specific
+au BufNewFile,BufRead *.tf set tabstop=2
+au BufNewFile,BufRead *.tf set softtabstop=2
+au BufNewFile,BufRead *.tf set shiftwidth=2
+"}}}
 
 "{{{ => TeX specific
 
