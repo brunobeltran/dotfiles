@@ -64,6 +64,6 @@ printf "powerline, etc.), would you like to continue?\n"
 printf "(Type 'please yes' to continue): "
 please_yes
 
-for helper in dependencies; do
+for helper in dependencies/*; do
     bash "${helper}"
 done

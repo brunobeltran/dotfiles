@@ -1,5 +1,5 @@
-font_dir="~/.local/share/fonts/"
-font_conf="~/.config/fontconfig/conf.d/"
+font_dir="${HOME}/.local/share/fonts/"
+font_conf="${HOME}/.config/fontconfig/conf.d/"
 mkdir -p $font_dir
 mkdir -p $font_conf
 
