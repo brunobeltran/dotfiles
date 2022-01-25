@@ -16,31 +16,32 @@ set nocompatible
 filetype off
 call plug#begin('~/.vim/plugged')
 Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
-Plug 'AndrewRadev/tagalong.vim'  " change surrounding html tag
-Plug 'ap/vim-css-color'       " see CSS colors in-line
-Plug 'bling/vim-airline'      " a powerline thingy for status on bottom/top
+Plug 'AndrewRadev/tagalong.vim' " change surrounding html tag
+Plug 'ap/vim-css-color'         " see CSS colors in-line
+Plug 'bling/vim-airline'        " a powerline thingy for status on bottom/top
 Plug 'vim-airline/vim-airline-themes'      " a powerline thingy for status on bottom/top
 Plug 'brunobeltran/vim-dragvisuals' " move visual selections <Up>/.../<Right>
-Plug 'brunobeltran/vim-vmath' " fork of '++' summarizer for numbers
+Plug 'brunobeltran/vim-vmath'   " fork of '++' summarizer for numbers
 "Plug 'christoomey/vim-tmux-navigator'     " <A-hjkl> between vimdows and tpanes
 "Plug 'davidhalter/jedi-vim'   " powerful python autcompletion/docs w/o YouCompleteMe
-Plug 'dense-analysis/ale'     " linter
-Plug 'flazz/vim-colorschemes' " lots of colorschemes
+Plug 'dense-analysis/ale'       " linter
+Plug 'flazz/vim-colorschemes'   " lots of colorschemes
 Plug 'eagletmt/ghcmod-vim', { 'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
 Plug 'eagletmt/neco-ghc', {'for': 'haskell' }    " stephendiehl.com/posts/vim_2016.html
 Plug 'Shougo/vimproc.vim', {'for': 'haskell', 'do': 'make'}
-Plug 'godlygeek/tabular'      " :Tabularize /<character to align by>
-Plug 'honza/vim-snippets'     " various pre-made snippets for UltiSnips
+Plug 'godlygeek/tabular'        " :Tabularize /<character to align by>
+Plug 'honza/vim-snippets'       " various pre-made snippets for UltiSnips
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } } " fast fuzzy file search
 Plug 'kballard/vim-swift', { 'for' : 'swift' }    " filetype, make commands, syntastic for Swift
-Plug 'Lokaltog/vim-easymotion'            " skip around, <leader><leader>*
-Plug 'majutsushi/tagbar'      " browse C/C++ tag files in split
-Plug 'mattn/emmet-vim'        " expanding html tags
-Plug 'mbbill/undotree'        " visualize Vim's undo tree
-Plug 'mhinz/vim-startify'     " TODO: setup after all components are in place for better landing screen
-Plug 'mileszs/ack.vim'        " drop grep results into quickfix list
-Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
+Plug 'Lokaltog/vim-easymotion'  " skip around, <leader><leader>*
+Plug 'majutsushi/tagbar'        " browse C/C++ tag files in split
+Plug 'mattn/emmet-vim'          " expanding html tags
+Plug 'mbbill/undotree'          " visualize Vim's undo tree
+Plug 'mhinz/vim-startify'       " TODO: setup after all components are in place for better landing screen
+Plug 'mileszs/ack.vim'          " drop grep results into quickfix list
+" Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
 Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
+Plug 'SirVer/ultisnips.git'   " snippets manager
 Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
 Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
 Plug 'tpope/vim-endwise'      " complete if...end blocks and similar
@@ -118,8 +119,10 @@ let g:ale_linters = {
             \   'css': ['stylelint'],
             \   'vue': ['eslint'],
             \   'javascript': ['eslint'],
-            \   'python': ['flake8'],
+            \   'bash': ['shellcheck'],
+            \   'python': ['gpylint', 'flake8'],
             \}
+let g:ale_python_gpylint_use_global = 1
 let g:ale_linters_explicit = 1
 let g:ale_fix_on_save = 1
 let g:ale_completion_enabled = 1
@@ -188,6 +191,11 @@ if executable('ag')
 endif
 "}}}
 
+"{{{ => Undotree
+
+nnoremap <leader>U :UndotreeToggle<CR>
+
+"}}}
 
 "{{{ => ctags (tag file generator)
 " where to look for tags. look for files called tags,ctags,.tags,.ctags starting
@@ -214,7 +222,7 @@ let g:UltiSnipsSnippetDirectories=['UltiSnips']
 "" Ultisnips
 let g:UltiSnipsExpandTrigger="<c-j>"
 let g:UltiSnipsJumpForwardTrigger="<c-j>"
-let g:UltiSnipsJumpBackwardTrigger="<c-m>"
+let g:UltiSnipsJumpBackwardTrigger="<c-k>"
 let g:UltiSnipsListSnippets="<c-l>"
 "}}}
 
