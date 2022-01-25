@@ -13,3 +13,8 @@ alias pbpaste='wl-paste'
 
 # makes all aliases accessible via sudo
 alias sudo='sudo '
+
+# always give me a python
+if [[ -z "$(which python)" && -n "$(which python3)" ]]; then
+    alias python='python3'
+fi
