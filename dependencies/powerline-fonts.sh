@@ -1,3 +1,5 @@
+#!/bin/bash
+
 font_dir="${HOME}/.local/share/fonts/"
 font_conf="${HOME}/.config/fontconfig/conf.d/"
 mkdir -p $font_dir
@@ -19,6 +21,3 @@ fi
 fc-cache -vf $font_dir
 
 printf "Powerline fonts installed, you may need to restart X.\n"
-
-
-
