@@ -28,6 +28,12 @@ fi
 if [ -f ~/.set_path ]; then
     . ~/.set_path
 fi
+
+# enable programmable completion features
+if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
+    . /etc/bash_completion
+fi
+# customize bash completion
 if [ -f ~/.bash_completion ]; then
     . ~/.bash_completion
 fi
@@ -35,10 +41,10 @@ fi
 # set a basic prompt
 PS1='[\u@\h \W]\n\$ '
 
-# and if we have liquidprompt, set and even better prompt
+# and if we have liquidprompt, set an even better prompt
 [[ $- = *i* ]] \
-    && [[ -f "/home/bbeltr1/developer/liquidprompt/liquidprompt" ]] \
-    && source /home/bbeltr1/developer/liquidprompt/liquidprompt
+    && [[ -f "${HOME}/developer/liquidprompt/liquidprompt" ]] \
+    && source "${HOME}/developer/liquidprompt/liquidprompt"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
