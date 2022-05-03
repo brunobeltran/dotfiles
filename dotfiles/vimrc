@@ -41,7 +41,7 @@ Plug 'mhinz/vim-startify'       " TODO: setup after all components are in place 
 Plug 'mileszs/ack.vim'          " drop grep results into quickfix list
 " Plug 'python-rope/ropevim', { 'do': 'sudo python ./setup.py install' }    " advance refactoring library for python
 Plug 'rust-lang/rust.vim'     " filetype, autoformatting, syntastic for rust
-Plug 'SirVer/ultisnips.git'   " snippets manager
+Plug 'SirVer/ultisnips'   " snippets manager
 Plug 'tpope/vim-abolish'      " 'semantic' substitution? :Subvert, :Abolish
 Plug 'tpope/vim-commentary'   " 'gc' verb to [un]comment lines
 Plug 'tpope/vim-endwise'      " complete if...end blocks and similar

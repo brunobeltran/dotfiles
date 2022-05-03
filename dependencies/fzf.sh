@@ -1,4 +1,5 @@
 #!/bin/bash
 
 # post-install instructions in apt-cache
-sudo apt-get install fzf
+git clone --depth 1 https://github.com/junegunn/fzf.git "${HOME}/.fzf"
+"${HOME}/.fzf/install"
