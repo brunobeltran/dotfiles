@@ -15,6 +15,7 @@
 set nocompatible
 filetype off
 call plug#begin('~/.vim/plugged')
+Plug 'hashivim/vim-terraform'
 Plug 'AndrewRadev/linediff.vim', { 'on': 'Linediff' }          " diffs between visual selections
 Plug 'AndrewRadev/tagalong.vim' " change surrounding html tag
 Plug 'ap/vim-css-color'         " see CSS colors in-line
@@ -120,7 +121,7 @@ let g:ale_linters = {
             \   'vue': ['eslint'],
             \   'javascript': ['eslint'],
             \   'bash': ['shellcheck'],
-            \   'python': ['gpylint', 'flake8'],
+            \   'python': ['ruff'],
             \}
 let g:ale_python_gpylint_use_global = 1
 let g:ale_linters_explicit = 1
@@ -151,11 +152,12 @@ set omnifunc=ale#completion#OmniFunc
 " Plugin 'bling/vim-airline'
 let g:airline#extensions#tabline#enabled=1
 let g:airline#extensions#tabline#buffer_nr_show=1
-let g:airline_theme="molokai"
+let g:airline_theme="papercolor"
 set laststatus=2
 " let g:airline_powerline_fonts = 1
 set term=screen-256color
-colorscheme molokai
+set background=light
+colorscheme PaperColor
 "set encoding=utf-8
 "set guifont=Fira\ Mono\ Medium\ for\ Powerline:h9
 "}}}
