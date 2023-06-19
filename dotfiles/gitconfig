@@ -1,27 +1,28 @@
 [core]
-	editor = vim
-	fileMode = false
+    editor = vim
+    fileMode = false
 [user]
-	email = brunobeltran0@gmail.com
-	name = Bruno Beltran
-[branch]
-	autosetuprebase = always
+    email = bruno@digit.bio
+    name = Bruno Beltran
 ; [diff "jupyternotebook"]
-; 	command = git-nbdiffdriver diff
+;     command = git-nbdiffdriver diff
 ; [merge "jupyternotebook"]
-; 	driver = git-nbmergedriver merge %O %A %B %L %P
-; 	name = jupyter notebook merge driver
+;     driver = git-nbmergedriver merge %O %A %B %L %P
+;     name = jupyter notebook merge driver
 ; [difftool "nbdime"]
-; 	cmd = git-nbdifftool diff \"$LOCAL\" \"$REMOTE\" \"$BASE\"
-[difftool]
-	prompt = false
+;     cmd = git-nbdifftool diff \"$LOCAL\" \"$REMOTE\" \"$BASE\"
 ; [mergetool "nbdime"]
-; 	cmd = git-nbmergetool merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+;     cmd = git-nbmergetool merge \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+[branch]
+    autosetuprebase = always
+[difftool]
+    prompt = false
 [mergetool]
-	prompt = false
+    prompt = false
 [pull]
-	rebase = true
+    rebase = true
 [alias]
-lg1 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
-lg2 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all
-lg = !"git lg1"
+    lg1 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
+    lg2 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all
+    lg = !"git lg1"
+    pr = !git fetch upstream refs/pull/$1/head:refs/remotes/upstream/pr/$1/head && git checkout upstream/pr/$1/head && :
