@@ -1,3 +1,4 @@
+*.sw*
 dotfiles/vim/plugged
 dotfiles/vim/.netrwhist
 dotfiles/vim/temp_dirs
