@@ -2,8 +2,11 @@
 export PATH="${PATH}:/opt/airwave/bin"
 
 # Zotero is my citation manager. unlike the firefox extension, the chrome
-# extensino requires the desktop program to be running in the background
+# extension requires the desktop program to be running in the background
 export PATH="${PATH}:/opt/Zotero_linux-x86_64:~/bin/Zotero_linux-x86_64"
+
+# For rust developement.
+export PATH="${HOME}/.cargo/bin:$PATH"
 
 # I like begin able to execute things in the working directory with highest
 # priority
