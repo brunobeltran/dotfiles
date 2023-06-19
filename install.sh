@@ -3,8 +3,8 @@ set -euo pipefail
 
 please_yes () {
     read please yes
-    if [[ ( ! -v please ) || "$please" != "please" || \
-        ( ! -v yes    ) || "$yes"    != "yes"     ]]; then
+    if [[ ( ! -z ${please+x} ) || "$please" != "please" || \
+          ( ! -z ${yes+x} ) || "$yes" != "yes" ]]; then
         printf "Quitting...no changes were made.\n"
         exit 2
     fi
@@ -19,8 +19,6 @@ if [[ -z "$MY_PATH" ]]; then
     printf "Something went very wrong. Cannot access install.sh's directory.\n"
     exit 1
 fi
-
-#echo "$MY_PATH"
 
 printf "About to replace the dotfiles in \n\t\t$HOME\n"
 printf "with their equivalents in \n\t\t$MY_PATH/dotfiles\n\n"
