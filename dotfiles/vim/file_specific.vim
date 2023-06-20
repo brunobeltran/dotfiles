@@ -16,17 +16,17 @@ au FileType tex set makeprg=pdflatex\ %:r\ &&\ bibtex\ %:r\ &&\ pdflatex\ %:r\ &
 
 "{{{ => Python specific
 
-" get virtualenv support
-if has('python')
-py << EOF
-import os.path
-import sys
-if 'VIRTUAL_ENV' in os.environ:
-    project_base_dir = os.environ['VIRTUAL_ENV']
-    sys.path.insert(0, project_base_dir)
-    execfile('/home/bbeltr1/.vim/venv_activate.py', dict(venv_directory=project_base_dir))
-EOF
-endif
+" " get virtualenv support
+" if has('python')
+" py << EOF
+" import os.path
+" import sys
+" if 'VIRTUAL_ENV' in os.environ:
+"     project_base_dir = os.environ['VIRTUAL_ENV']
+"     sys.path.insert(0, project_base_dir)
+"     execfile('/home/bbeltr1/.vim/venv_activate.py', dict(venv_directory=project_base_dir))
+" EOF
+" endif
 
 " PEP8-y whitespace options
 au filetype python set tabstop=4

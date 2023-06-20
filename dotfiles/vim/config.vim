@@ -143,29 +143,6 @@ set encoding=utf8
 set showcmd
 set title
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Text, tab and indent related
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Use spaces instead of tabs
-set expandtab
-
-" Be smart when using tabs ;)
-set smarttab
-
-" 1 tab == 4 spaces
-set shiftwidth=4
-set tabstop=4
-set softtabstop=4
-set shiftround
-set autoindent
-
-set linebreak
-set textwidth=80
-
-set si "Smart indent
-set wrap "Wrap lines
-
-
 """"""""""""""""""""""""""""""
 " => Visual mode related
 """"""""""""""""""""""""""""""
@@ -182,34 +159,11 @@ vnoremap <silent> # :call VisualSelection('b', '')<CR>
 inoremap <silent> <C-e> <Esc>$a
 inoremap <silent> <C-a> <Esc>0i
 
-" Treat long lines as break lines (useful when moving around in them)
-map j gj
-map k gk
-
-" readline-style motion in command/insert modes
-cnoremap <C-A> <Home>
-cnoremap <C-E> <End>
-cnoremap <C-K> <C-U>
-cnoremap <C-N> <Down>
-cnoremap <C-P> <Up>
-cnoremap <C-D> <Right><Backspace>
-cnoremap <C-F> <Right>
-cnoremap <C-B> <Left>
-inoremap <C-D> <Right><Backspace>
-inoremap <C-F> <Right>
-inoremap <C-B> <Left>
-
 " Alt way to move between windows
 "map <C-j> <C-W>j
 "map <C-k> <C-W>k
 "map <C-h> <C-W>h
 "map <C-l> <C-W>l
-
-" Close the current buffer
-map <leader>bx :Bclose<cr>
-
-" Close all the buffers
-map <leader>ba :1,1000 bd!<cr>
 
 " Useful mappings for managing tabs
 map <leader>tn :tabnew<cr>
@@ -252,24 +206,6 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Editing mappings
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Remap VIM 0 to first non-blank character
-"map 0 ^
-
-" Delete trailing white space on save, useful for Python and CoffeeScript ;)
-func! DeleteTrailingWS()
-  exe "normal mz"
-  %s/\s\+$//ge
-  exe "normal `z"
-endfunc
-" autocmd BufWrite *.py :call DeleteTrailingWS()
-" autocmd BufWrite *.coffee :call DeleteTrailingWS()
-" a nice shortcut for it
-map <leader>dtw :call DeleteTrailingWS()<cr>
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Spell checking
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Pressing <leader>ss will toggle and untoggle spell checking
@@ -299,6 +235,7 @@ endif
 set undodir=~/.vim/temp_dirs/undodir
 set undofile
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Misc
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -314,10 +251,6 @@ map <leader>P :setlocal paste!<cr>
 nnoremap q: :q
 " and of accidentally putting capital letters for commands...
 command! Q q
-
-" catchall cleanup
-nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>:call DeleteTrailingWS()<cr>:w<cr>:edit<cr>
-nnoremap <leader><leader><cr> <C-c>:noh<cr>:redraw!<cr>:%s/\t/    /g<cr>:w<cr>:edit<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions

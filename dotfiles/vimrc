@@ -78,6 +78,7 @@ filetype plugin indent on
 "     autocmd BufWritePost .vimrc,config.vim,file_specific.vim
 " augroup END
 
+source ~/.vim/shared.vim
 source ~/.vim/config.vim
 source ~/.vim/file_specific.vim
 
