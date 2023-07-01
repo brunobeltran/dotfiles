@@ -1,3 +1,6 @@
 [submodule "dotfiles/tmux/plugins/tpm"]
 	path = dotfiles/tmux/plugins/tpm
 	url = https://github.com/tmux-plugins/tpm.git
+[submodule "dotfiles/config/nvim/lua/plugins/bazel"]
+	path = dotfiles/config/nvim/lua/plugins/bazel
+	url = git@github.com:brunobeltran/bazel-nvim-lsp.git
