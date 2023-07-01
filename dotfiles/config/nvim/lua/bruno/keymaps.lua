@@ -25,5 +25,10 @@ vim.keymap.set("n", "N", "Nzzzv")
 vim.keymap.set("i", "<C-c>", "<Esc>")
 
 -- -- Typing the colon is such a slog.
--- vim.keymap.set("n", "<leader>cn", "cnext")
--- vim.keymap.set("n", "<leader>cp", "cprev")
+vim.keymap.set("n", "<leader>cn", ":cnext<CR>")
+vim.keymap.set("n", "<leader>cp", ":cprev<CR>")
+
+-- Change into the directory of the current buffer.
+vim.keymap.set("n", "<leader>cd", ":cd %:h<CR>")
+
+vim.keymap.set("n", "<leader>bt", ":BazelSelectTarget<CR>")

@@ -1,4 +1,12 @@
 local plugins = {
+    {
+        name = "bazel",
+        dev = true,
+        dir = "/Users/bruno/.config/nvim/lua/plugins/bazel",
+        config = function()
+            require("plugins.config.bazel")
+        end,
+    },
     -- Has to come even more first since it is used by lsp-zero.
     {
         "williamboman/mason.nvim",
@@ -19,6 +27,7 @@ local plugins = {
                 "ruff",
                 "shellcheck",
                 "shellharden",
+                "shfmt",
             },
         },
     },
@@ -50,6 +59,29 @@ local plugins = {
         config = function()
             require("plugins.config.lspzero")
         end
+    },
+    {
+        "jose-elias-alvarez/null-ls.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        config = function()
+            require("plugins.config.null-ls")
+        end
+    },
+    {
+        "jay-babu/mason-null-ls.nvim",
+        event = { "BufReadPre", "BufNewFile" },
+        dependencies = {
+            "williamboman/mason.nvim",
+            "jose-elias-alvarez/null-ls.nvim",
+        },
+        config = function()
+            require("plugins.config.mason-null-ls")
+        end,
+    },
+    {
+        "j-hui/fidget.nvim",
+        tag = "legacy",
+        config = true,
     },
     {
         "neovim/nvim-lspconfig",
@@ -118,7 +150,7 @@ local plugins = {
         version = "*",
         dependencies = 'nvim-tree/nvim-web-devicons',
         config = function()
-            require("bufferline").setup({})
+            require("bufferline").setup({ options = { numbers = "buffer_id" } })
         end
     },
     { "adelarsq/vim-matchit" }, -- % operator for HTML, LaTeX, etc.
