@@ -25,5 +25,5 @@
     lg1 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
     lg2 = log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all
     lg = !"git lg1"
-    pr = !git fetch upstream refs/pull/$1/head:refs/remotes/upstream/pr/$1/head && git checkout upstream/pr/$1/head && :
+    pr = !git fetch -f upstream refs/pull/$1/head:refs/remotes/upstream/pr/$1/head && git checkout upstream/pr/$1/head && :
     pu = !"git push -u origin $(git rev-parse --abbrev-ref HEAD)"
