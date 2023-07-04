@@ -15,9 +15,9 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+require("bruno")
 local shared_vim_config = os.getenv("HOME") .. "/.vim/shared.vim"
 require("core.shared").maybe_source(shared_vim_config)
 
-require("bruno")
 
 require("lazy").setup(require("plugins"))
