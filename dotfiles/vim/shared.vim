@@ -71,3 +71,12 @@ endfunc
 " catchall cleanup
 nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>:call DeleteTrailingWS()<cr>:w<cr>:edit<cr>
 nnoremap <leader><leader><cr> <C-c>:noh<cr>:redraw!<cr>:%s/\t/    /g<cr>:w<cr>:edit<cr>
+
+" Toggle paste mode on and off
+map <leader>P :setlocal paste!<cr>
+
+" so tired of accidentally ending up in record mode
+nnoremap q: :q
+" and of accidentally putting capital letters for commands...
+command! Q q
+

@@ -244,14 +244,6 @@ set undofile
 highlight ColorColumn ctermbg=magenta
 call matchadd('ColorColumn', '\%81v', 100)
 
-" Toggle paste mode on and off
-map <leader>P :setlocal paste!<cr>
-
-" so tired of accidentally ending up in record mode
-nnoremap q: :q
-" and of accidentally putting capital letters for commands...
-command! Q q
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
