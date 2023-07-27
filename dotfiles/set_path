@@ -8,6 +8,9 @@ export PATH="${PATH}:/opt/Zotero_linux-x86_64:~/bin/Zotero_linux-x86_64"
 # For rust developement.
 export PATH="${HOME}/.cargo/bin:$PATH"
 
+# Homebrew on Macs (and sometimes on Linux as well)!
+export PATH="/opt/homebrew/bin:${PATH}"
+
 # I like begin able to execute things in the working directory with highest
 # priority
 export PATH=".:~/bin:${PATH}"
