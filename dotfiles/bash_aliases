@@ -4,6 +4,9 @@ alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
+# Bazel should always secretly be Bazelisk if possible.
+alias bazel=bazelisk
+
 # for a beep
 alias beep='play -qn synth 1 sine 800 vol 1 '
 
@@ -27,4 +30,34 @@ if [[ -z "$(which python)" && -n "$(which python3)" ||
         fi
     fi
 fi
-alias bazel=bazelisk
+
+# Create a Git worktree for Digital Biology
+if [[ -d /Users/bruno/dbSDK ]]; then
+    hgd () {
+        local worktree_path;
+        worktree_path="/Users/bruno/dbSDK/$1"
+        if [[ -d "${worktree_path}" ]]; then
+            echo "Worktree exists, taking you there!"
+            cd "${worktree_path}"
+            pwd
+        else
+            git show-ref --verify --quiet "refs/heads/$1"
+            if [[ $? == 0 ]]; then
+                echo "Checking out existing branch...$1"
+                git worktree add "${worktree_path}" $1 && cd "${worktree_path}"
+            else
+                git worktree add "/Users/bruno/dbSDK/$1" main -b $1 && cd "${worktree_path}"
+            fi
+        fi
+    }
+    hgdelete () {
+        local worktree_path;
+        worktree_path="/Users/bruno/dbSDK/$1"
+        if [[ -d "${worktree_path}" ]]; then
+            echo -n "Attempting to remove git worktree at ${worktree_path}..."
+            git worktree remove "${worktree_path}" && echo "Success!"
+        else
+            echo "Worktree path ${worktree_path} does not exist!" 1>&2
+        fi
+    }
+fi
