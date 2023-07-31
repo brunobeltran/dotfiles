@@ -1,16 +1,36 @@
+##
+# The following are appended to the path in the order they are found in the
+# `paths_to_append` array.
+
+# Fix weird systems that don't set the usual PATH locations at all.
+paths_to_append=(/bin /usr/bin /usr/local/bin /sbin /usr/sbin)
+
 # airwave connects windows VSTs to my pure-linux Bitwig Studio install
-export PATH="${PATH}:/opt/airwave/bin"
+paths_to_append+=(/opt/airwave/bin)
 
-# Zotero is my citation manager. unlike the firefox extension, the chrome
-# extension requires the desktop program to be running in the background
-export PATH="${PATH}:/opt/Zotero_linux-x86_64:~/bin/Zotero_linux-x86_64"
+for p in "${paths_to_append[@]}"; do
+    if [[ -d "${p}" && ! ":${PATH}:" == *":${p}:"* ]]; then
+        export PATH="${PATH}:${p}"
+    fi
+done
 
-# For rust developement.
-export PATH="${HOME}/.cargo/bin:$PATH"
-
-# Homebrew on Macs (and sometimes on Linux as well)!
-export PATH="/opt/homebrew/bin:${PATH}"
+##
+# The following are prepended in reverse order, so they appear in the path in
+# the order they are found in the `paths_to_prepend` array.
 
 # I like begin able to execute things in the working directory with highest
 # priority
-export PATH=".:~/bin:${PATH}"
+paths_to_prepend=("." "${HOME}/bin")
+
+# For rust developement.
+paths_to_prepend+=("${HOME}/.cargo/bin")
+
+# Homebrew on Macs (and sometimes on Linux as well)!
+paths_to_prepend+=(/opt/homebrew/bin)
+
+for (( idx=${#paths_to_prepend[@]}-1 ; idx>=0 ; idx--)) ; do
+    p="${paths_to_prepend[idx]}"
+    if [[ -d "${p}" && ! ":${PATH}:" == *":${p}:"* ]]; then
+        export PATH="${p}:${PATH}"
+    fi
+done
