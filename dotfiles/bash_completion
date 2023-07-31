@@ -1,0 +1,6 @@
+complete -C $(which aws_completer) aws
+complete -C /opt/homebrew/bin/terraform terraform
+[[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+
+# For our custom hgd() bash commands (see ~/.bash_aliases).
+__git_complete hgd _git_checkout

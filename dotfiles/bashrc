@@ -33,6 +33,7 @@ fi
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
     . /etc/bash_completion
 fi
+
 # customize bash completion
 if [ -f ~/.bash_completion ]; then
     . ~/.bash_completion
@@ -63,4 +64,3 @@ unset __conda_setup
 
 [ -f "${HOME}/.passwords" ] && . ${HOME}/.passwords
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
-complete -C /opt/homebrew/bin/terraform terraform
