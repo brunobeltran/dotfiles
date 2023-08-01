@@ -15,6 +15,13 @@ alias pbpaste='wl-paste'
 alias sudo='sudo '
 
 # always give me a python
-if [[ -z "$(which python)" && -n "$(which python3)" ]]; then
-    alias python='python3'
+if [[ -z "$(which python)" && -n "$(which python3)" ||
+      -x "$(command -v lsb_release)" && ! -z "$(lsb_release -a | grep Debian)" ]]; then
+    if [[ -z "$(ls ~/.miniconda*)" ]]; then
+        alias python='python3'
+        if [[ -n "$(which pip3)" ]]; then
+            alias pip='pip3'
+        fi
+    fi
 fi
+alias bazel=bazelisk
