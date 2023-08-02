@@ -31,11 +31,16 @@ if [[ -z "$(which python)" && -n "$(which python3)" ||
     fi
 fi
 
+WORKTREE_ROOT="${HOME}/developer/dbSDK"
+
 # Create a Git worktree for Digital Biology
-if [[ -d /Users/bruno/dbSDK ]]; then
+if [[ -d "${WORKTREE_ROOT}" ]]; then
+    gtw () {
+        cd "${WORKTREE_ROOT}"
+    }
     hgd () {
         local worktree_path;
-        worktree_path="/Users/bruno/dbSDK/$1"
+        worktree_path="${WORKTREE_ROOT}/$1"
         if [[ -d "${worktree_path}" ]]; then
             echo "Worktree exists, taking you there!"
             cd "${worktree_path}"
@@ -46,13 +51,13 @@ if [[ -d /Users/bruno/dbSDK ]]; then
                 echo "Checking out existing branch...$1"
                 git worktree add "${worktree_path}" $1 && cd "${worktree_path}"
             else
-                git worktree add "/Users/bruno/dbSDK/$1" main -b $1 && cd "${worktree_path}"
+                git worktree add "${WORKTREE_ROOT}/$1" main -b $1 && cd "${worktree_path}"
             fi
         fi
     }
     hgdelete () {
         local worktree_path;
-        worktree_path="/Users/bruno/dbSDK/$1"
+        worktree_path="${WORKTREE_ROOT}/$1"
         if [[ -d "${worktree_path}" ]]; then
             echo -n "Attempting to remove git worktree at ${worktree_path}..."
             git worktree remove "${worktree_path}" && echo "Success!"

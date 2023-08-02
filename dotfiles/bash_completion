@@ -1,6 +1,18 @@
-complete -C $(which aws_completer) aws
-complete -C /opt/homebrew/bin/terraform terraform
+# [[ -r "/etc/bash_completion" ]] && . "/etc/bash_completion"
+
+aws_completer_path=$(which aws_completer)
+[[ -n $aws_completer_path ]] && complete -C $aws_completer_path aws
+
+terraform_path=$(which terraform)
+[[ -n $terraform_path ]] && complete -C $terraform_path terraform
+
 [[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+
+# For some scripts, we just have no consistent way to fetch them. If a script is
+# sourced here, make sure to remove it if you end up sourcing it above!
+for completion_script in ~/.config/bash_completion.d/*; do
+    . $completion_script
+done
 
 # For our custom hgd() bash commands (see ~/.bash_aliases).
 __git_complete hgd _git_checkout
