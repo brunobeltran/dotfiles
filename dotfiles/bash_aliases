@@ -37,6 +37,7 @@ WORKTREE_ROOT="${HOME}/developer/dbSDK"
 if [[ -d "${WORKTREE_ROOT}" ]]; then
     gtw () {
         cd "${WORKTREE_ROOT}"
+        ls
     }
     hgd () {
         local worktree_path;
