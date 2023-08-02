@@ -42,10 +42,8 @@ fi
 # set a basic prompt
 PS1='[\u@\h \W]\n\$ '
 
-# and if we have liquidprompt, set an even better prompt
-[[ $- = *i* ]] \
-    && [[ -f "${HOME}/developer/liquidprompt/liquidprompt" ]] \
-    && source "${HOME}/developer/liquidprompt/liquidprompt"
+# Use the "starship" prompt if we have it.
+[[ -n $(which starship) ]] && eval "$(starship init bash)"
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
