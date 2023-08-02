@@ -32,8 +32,13 @@ if [[ -z "$(which python)" && -n "$(which python3)" ||
 fi
 
 WORKTREE_ROOT="${HOME}/developer/dbSDK"
+if [[ ! -d "${WORKTREE_ROOT}" ]]; then
+    # Try one alternative directory just in case.
+    WORKTREE_ROOT="${HOME}/dbSDK"
+fi
 
-# Create a Git worktree for Digital Biology
+# Instantiate Git worktree aliases for Digital Biology only if the WORKTREE_ROOT
+# exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
     gtw () {
         cd "${WORKTREE_ROOT}"
