@@ -10,7 +10,7 @@ terraform_path=$(which terraform)
 
 # For some scripts, we just have no consistent way to fetch them. If a script is
 # sourced here, make sure to remove it if you end up sourcing it above!
-for completion_script in ~/.config/bash_completion.d/*; do
+for completion_script in ${HOME}/.config/bash_completion.d/*; do
     . $completion_script
 done
 
