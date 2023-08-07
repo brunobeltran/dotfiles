@@ -21,22 +21,22 @@ stty start undef
 stty stop undef
 
 # source aliases from a separate file, we have many
-if [ -f ~/.bash_aliases ]; then
-    . ~/.bash_aliases
+if [ -f "${HOME}/.bash_aliases" ]; then
+	. "${HOME}/.bash_aliases"
 fi
 # and centralize adding things to my PATH
-if [ -f ~/.set_path ]; then
-    . ~/.set_path
+if [ -f "${HOME}/.set_path" ]; then
+	. "${HOME}/.set_path"
 fi
 
 # enable programmable completion features
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
-    . /etc/bash_completion
+	. /etc/bash_completion
 fi
 
 # customize bash completion
-if [ -f ~/.bash_completion ]; then
-    . ~/.bash_completion
+if [ -f "${HOME}/.bash_completion" ]; then
+	. "${HOME}/.bash_completion"
 fi
 
 # set a basic prompt
@@ -47,18 +47,19 @@ PS1='[\u@\h \W]\n\$ '
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$("${HOME}/.miniconda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$("${HOME}/.miniconda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)"
 if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
+	eval "$__conda_setup"
 else
-    if [ -f "${HOME}/.miniconda/etc/profile.d/conda.sh" ]; then
-        . "${HOME}/.miniconda/etc/profile.d/conda.sh"
-    else
-        export PATH="${HOME}/.miniconda/bin:$PATH"
-    fi
+	if [ -f "${HOME}/.miniconda/etc/profile.d/conda.sh" ]; then
+		. "${HOME}/.miniconda/etc/profile.d/conda.sh"
+	else
+		export PATH="${HOME}/.miniconda/bin:$PATH"
+	fi
 fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-[ -f "${HOME}/.passwords" ] && . ${HOME}/.passwords
-[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+[[ -f "${HOME}/.passwords" ]] && . ${HOME}/.passwords
+[[ -f "${HOME}/.fzf.bash" ]] && source "${HOME}/.fzf.bash"
+[[ -f /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
