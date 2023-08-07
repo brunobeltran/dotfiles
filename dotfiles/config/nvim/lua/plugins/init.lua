@@ -2,7 +2,7 @@ local plugins = {
     {
         name = "bazel",
         dev = true,
-        dir = "/Users/bruno/.config/nvim/lua/plugins/bazel",
+        dir = vim.fn.expand("$HOME/.config/nvim/lua/plugins/bazel"),
         config = function()
             require("plugins.config.bazel")
         end,

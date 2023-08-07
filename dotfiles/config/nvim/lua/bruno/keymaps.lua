@@ -2,7 +2,7 @@
 vim.g.mapleader = " "
 
 -- Use the "go up one directory" mapping from netrw to also open netrw.
-vim.keymap.set("n", "-", vim.cmd.Ex)
+vim.keymap.set("n", "-", function () vim.cmd("Ex") end)
 -- Paste without losing your copy buffer!
 vim.keymap.set("x", "<leader>p", "\"_dP")
 
