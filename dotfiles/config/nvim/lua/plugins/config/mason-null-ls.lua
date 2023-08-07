@@ -4,7 +4,6 @@ require("mason-null-ls").setup({
         "isort",
         "ruff",
         "shfmt",
-        "terraform_fmt",
         "yamlfmt",
     },
     automatic_installation = true,
