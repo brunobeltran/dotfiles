@@ -1,14 +1,15 @@
-#
-# ~/.bash_profile
-#
+# Disable the error caused by the Conda-managed block, and specify our shell
+# type to shellcheck without having to use a shebang.
+# shellcheck shell=bash disable=SC2181
 
+# shellcheck source=/dev/null
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
 # This stanza is required even though we also have it in our .bashrc, I think
 # because Conda manually checks for it on OS X currently?
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/Users/bruno/.miniconda/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+__conda_setup="$('/Users/bruno/.miniconda/bin/conda' 'shell.bash' 'hook' 2>/dev/null)"
 if [ $? -eq 0 ]; then
     eval "$__conda_setup"
 else

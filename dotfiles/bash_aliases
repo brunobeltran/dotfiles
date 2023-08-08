@@ -1,3 +1,5 @@
+# shellcheck shell=bash disable=SC2164
+
 # for sanity
 alias ls='ls --color=auto'
 alias ll='ls -alF'
@@ -20,9 +22,15 @@ fi
 # makes all aliases accessible via sudo
 alias sudo='sudo '
 
-# always give me a python
-if [[ -z "$(which python)" && -n "$(which python3)" ||
-      -x "$(command -v lsb_release)" && ! -z "$(lsb_release -a | grep Debian)" ]]; then
+# Always give me a python that makes sense.
+_should_alias_python_to_python3=false
+if [[ -z "$(which python)" && -n "$(which python3)" ]]; then
+    _should_alias_python_to_python3=true
+fi
+if [[ -x "$(command -v lsb_release)" ]] && ! lsb_release -a | grep -q Debian; then
+    _should_alias_python_to_python3=true
+fi
+if [[ "$_should_alias_python_to_python3" = true ]]; then
     if [[ -z "$(ls ~/.miniconda*)" ]]; then
         alias python='python3'
         if [[ -n "$(which pip3)" ]]; then
@@ -30,6 +38,7 @@ if [[ -z "$(which python)" && -n "$(which python3)" ||
         fi
     fi
 fi
+unset _should_alias_python_to_python3
 
 WORKTREE_ROOT="${HOME}/developer/dbSDK"
 if [[ ! -d "${WORKTREE_ROOT}" ]]; then
@@ -40,24 +49,23 @@ fi
 # Instantiate Git worktree aliases for Digital Biology only if the WORKTREE_ROOT
 # exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
-    gtw () {
+    gtw() {
         cd "${WORKTREE_ROOT}"
         ls
     }
-    hgd () {
-        local worktree_path;
+    hgd() {
+        local worktree_path
         worktree_path="${WORKTREE_ROOT}/$1"
         if [[ -d "${worktree_path}" ]]; then
             echo "Worktree exists, taking you there!"
             cd "${worktree_path}"
             pwd
         else
-            git show-ref --verify --quiet "refs/heads/$1"
-            if [[ $? == 0 ]]; then
+            if git show-ref --verify --quiet "refs/heads/$1"; then
                 echo "Checking out existing branch...$1"
-                git worktree add "${worktree_path}" $1 && cd "${worktree_path}"
+                git worktree add "${worktree_path}" "$1" && cd "${worktree_path}"
             else
-                git worktree add "${WORKTREE_ROOT}/$1" main -b $1 && cd "${worktree_path}"
+                git worktree add "${WORKTREE_ROOT}/$1" main -b "$1" && cd "${worktree_path}"
             fi
         fi
     }
