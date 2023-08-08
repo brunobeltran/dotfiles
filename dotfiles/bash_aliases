@@ -69,14 +69,52 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
             fi
         fi
     }
-    hgdelete () {
-        local worktree_path;
+    _exists_pr() {
+        [[ "$#" -eq 2 ]] || return 255
+        gh pr list --search "is:pr $2 head:$1" --json headRefName |
+            python -c 'import sys, json; [print(o["headRefName"]) for o in json.load(sys.stdin)]' |
+            grep -q "^$1$"
+        return $?
+    }
+    hgdelete() {
+        local worktree_path
         worktree_path="${WORKTREE_ROOT}/$1"
+        if [[ "$2" != "-f" ]]; then
+            local failed=false
+            if _exists_pr "$1" "is:open"; then
+                failed=true
+                echo "ERROR: Found open PR with 'gh pr list --search \"is:pr is:open head:$1\"'"
+            fi
+            if ! _exists_pr "$1" "is:closed"; then
+                failed=true
+                echo "ERROR: Closed PR not found with 'gh pr list --search \"is:pr is:closed head:$1\"'"
+            fi
+            if [[ "$failed" = true ]]; then
+                echo "Pass \"-f\" flag to ignore this and still attempt removal."
+                echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!"
+                return 1
+            fi
+        fi
         if [[ -d "${worktree_path}" ]]; then
             echo -n "Attempting to remove git worktree at ${worktree_path}..."
-            git worktree remove "${worktree_path}" && echo "Success!"
-        else
-            echo "Worktree path ${worktree_path} does not exist!" 1>&2
+            if ! git worktree remove "$2" "${worktree_path}" &&
+                echo "Success!" ||
+                echo "FAILED. Pass '-f' to force."; then
+                return 2
+            fi
         fi
+        [[ "$2" == "-f" ]] && d_flag="-D" || d_flag="-d"
+        echo -n "Attempting to force-delete local branch with 'git branch $d_flag $1'..."
+        if ! git branch "$d_flag" "$1"; then
+            echo "FAILED. Pass '-f' to upgrade to use 'git branch -D'."
+            return 3
+        else
+            echo "Success!"
+        fi
+        echo -n "Attempting to delete corresponding upstream branch: origin/$1..."
+        if ! git push -d origin "$1"; then
+            return 4
+        fi
+        echo "Successfully scrubbed all references to $1"
     }
 fi

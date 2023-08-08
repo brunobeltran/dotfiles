@@ -16,3 +16,4 @@ done
 
 # For our custom hgd() bash commands (see ~/.bash_aliases).
 __git_complete hgd _git_checkout
+__git_complete hgdelete _git_checkout
