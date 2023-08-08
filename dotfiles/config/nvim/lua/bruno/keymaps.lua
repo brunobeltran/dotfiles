@@ -2,7 +2,7 @@
 vim.g.mapleader = " "
 
 -- Use the "go up one directory" mapping from netrw to also open netrw.
-vim.keymap.set("n", "-", function () vim.cmd("Ex") end)
+vim.keymap.set("n", "-", function() vim.cmd("Ex") end)
 -- Paste without losing your copy buffer!
 vim.keymap.set("x", "<leader>p", "\"_dP")
 
@@ -32,3 +32,6 @@ vim.keymap.set("n", "<leader>cp", ":cprev<CR>")
 vim.keymap.set("n", "<leader>cd", ":cd %:h<CR>")
 
 vim.keymap.set("n", "<leader>bt", ":BazelSelectTarget<CR>")
+
+-- Convenience for hard-to-do things.
+vim.keymap.set("n", "<leader>ltl", ":set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>")
