@@ -65,7 +65,10 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
                 echo "Checking out existing branch...$1"
                 git worktree add "${worktree_path}" "$1" && cd "${worktree_path}"
             else
-                git worktree add "${WORKTREE_ROOT}/$1" main -b "$1" && cd "${worktree_path}"
+                echo "Pulling upstream changes to main before creating new branch!"
+                hgd main >/dev/null 2>&1 &&
+                    git pull upstream main &&
+                    git worktree add "${WORKTREE_ROOT}/$1" main -b "$1" && cd "${worktree_path}"
             fi
         fi
     }
@@ -97,10 +100,11 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         fi
         if [[ -d "${worktree_path}" ]]; then
             echo -n "Attempting to remove git worktree at ${worktree_path}..."
-            if ! git worktree remove "$2" "${worktree_path}" &&
-                echo "Success!" ||
-                echo "FAILED. Pass '-f' to force."; then
+            if ! git worktree remove "$2" "${worktree_path}"; then
+                echo "FAILED. Pass '-f' to force."
                 return 2
+            else
+                echo "Success!"
             fi
         fi
         [[ "$2" == "-f" ]] && d_flag="-D" || d_flag="-d"
