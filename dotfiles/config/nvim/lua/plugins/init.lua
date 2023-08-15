@@ -7,8 +7,8 @@ local plugins = {
             require("plugins.config.bazel")
         end,
     },
-    -- Has to come even more first since it is used by lsp-zero.
     {
+        -- Has to come even more first since it is used by lsp-zero.
         "williamboman/mason.nvim",
         build = ":MasonUpdate", -- :MasonUpdate updates registry contents
         config = function()
@@ -31,8 +31,8 @@ local plugins = {
             },
         },
     },
-    -- Has to come first, since it sets up several other plugins.
     {
+        -- Has to come first, since it sets up several other plugins.
         "VonHeikemen/lsp-zero.nvim",
         branch = "v2.x",
         dependencies = {
@@ -79,6 +79,7 @@ local plugins = {
         end,
     },
     {
+        -- Progress bar plugin for when our LSPs are running.
         "j-hui/fidget.nvim",
         tag = "legacy",
         config = true,
@@ -133,6 +134,8 @@ local plugins = {
     },
     { "nvim-treesitter/playground" },
     {
+        -- Status bar. Replaces airline. Still want to try some others like
+        -- feline.nvim.
         "nvim-lualine/lualine.nvim",
         dependencies = { "nvim-tree/nvim-web-devicons" },
         config = function()
@@ -140,11 +143,12 @@ local plugins = {
         end
     },
     {
+        -- Visualize Vim's undo tree.
         "mbbill/undotree",
         config = function()
             vim.keymap.set("n", "<leader>u", vim.cmd.UndotreeToggle)
         end
-    }, -- visualize Vim's undo tree
+    },
     {
         'akinsho/bufferline.nvim',
         version = "*",
@@ -159,9 +163,6 @@ local plugins = {
     { "AndrewRadev/linediff.vim" },
     { "AndrewRadev/tagalong.vim" }, -- change surrounding html tag
     { "ap/vim-css-color" },         -- see CSS colors in-line
-    -- Replaced by lualine.nvim
-    -- { "bling/vim-airline" },        -- a powerline thingy for status on bottom/top
-    -- { "vim-airline/vim-airline-themes" },      -- a powerline thingy for status on bottom/top
     { "atweiden/vim-dragvisuals" }, -- move visual selections <Up>/.../<Right>
     {
         "nixon/vim-vmath",
