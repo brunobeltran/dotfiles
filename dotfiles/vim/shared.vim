@@ -20,6 +20,45 @@ set textwidth=80
 set si " Smart indent
 set wrap " Wrap lines
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => VIM user interface
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+" Turn on the WiLd menu
+set wildmenu
+
+" Ignore compiled files
+set wildignore=*.o,*~,*.pyc
+if has("win16") || has("win32")
+    set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
+else
+    set wildignore+=.git\*,.hg\*,.svn\*
+endif
+
+" have the wildmenu emulate terminal tab completion
+set wildmode=list:longest
+
+"Always show current position
+set ruler
+
+" Height of the command bar
+set cmdheight=2
+
+" A buffer becomes hidden when it is abandoned
+set hidden
+
+" Ignore case when searching
+set ignorecase
+
+" When searching try to be smart about cases
+set smartcase
+
+" Highlight search results
+set hlsearch
+
+" Makes search act like search in modern browsers
+set incsearch
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Netrw settings (Vim's built-in file manager)
@@ -79,4 +118,6 @@ map <leader>P :setlocal paste!<cr>
 nnoremap q: :q
 " and of accidentally putting capital letters for commands...
 command! Q q
+
+
 
