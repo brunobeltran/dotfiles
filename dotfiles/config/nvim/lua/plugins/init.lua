@@ -197,6 +197,7 @@ local plugins = {
     { "mhinz/vim-startify" }, -- TODO: setup after all components are in place for better landing screen
     { "mileszs/ack.vim" },    -- drop grep results into quickfix list
     -- Plug "python-rope/ropevim", { "do": "sudo python ./setup.py install" }    " advance refactoring library for python
+    { "ryvnf/readline.vim" }, -- readline shortcuts in command mode.
     -- { "rust-lang/rust.vim" },     -- filetype, autoformatting, syntastic for rust
     --{ "SirVer/ultisnips" },   -- snippets manager
     -- { "tpope/vim-abolish" },      -- "semantic" substitution? :Subvert, :Abolish
