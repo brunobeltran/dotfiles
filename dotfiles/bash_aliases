@@ -19,6 +19,11 @@ if [[ -z "$(which pbcopy)" ]]; then
     alias pbpaste='wl-paste'
 fi
 
+# nvim does not provide a dedicated executable for diff'ing
+if [[ -x "$(command -v nvim)" ]]; then
+    alias vimdiff='nvim -d'
+fi
+
 # makes all aliases accessible via sudo
 alias sudo='sudo '
 
@@ -72,15 +77,15 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
                 hgd main >/dev/null 2>&1 &&
                     git pull upstream main &&
                     git worktree add "${WORKTREE_ROOT}/$1" main -b "$1" &&
-                    cd "${worktree_path}" &&
-                    echo "Pulling/updating all submodules..." &&
-                    git submodule update --init --recursive
-
-                echo "Kicking off some slow repository rules in the background..."
-                echo "..."
-                echo "...it may take up to 5min for these to finish!"
-                bazel build $INITIAL_TARGET >/dev/null 2>&1 &
+                    cd "${worktree_path}"
             fi
+            echo "Pulling/updating all submodules..." &&
+                git submodule update --init --recursive
+
+            echo "Kicking off some slow repository rules in the background..."
+            echo "..."
+            echo "...it may take up to 5min for these to finish!"
+            bazel build $INITIAL_TARGET >/dev/null 2>&1 &
         fi
     }
     _exists_pr() {

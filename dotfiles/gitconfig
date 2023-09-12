@@ -14,3 +14,5 @@
     rebase = true
 [include]
 	path = /Users/bruno/dbSDK/main/tools/git/config
+[diff]
+	tool = nvimdiff
