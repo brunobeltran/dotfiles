@@ -28,15 +28,6 @@ au FileType tex set makeprg=pdflatex\ %:r\ &&\ bibtex\ %:r\ &&\ pdflatex\ %:r\ &
 " EOF
 " endif
 
-" PEP8-y whitespace options
-au filetype python set tabstop=4
-au filetype python set softtabstop=4
-au filetype python set shiftwidth=4
-au filetype python set textwidth=88
-au filetype python set expandtab
-au filetype python set autoindent
-au filetype python set fileformat=unix
-
 " Good default fold positions
 "autocmd BufWinEnter *.py setlocal foldexpr=SimpylFold(v:lnum) foldmethod=expr
 "autocmd BufWinLeave *.py setlocal foldexpr< foldmethod<

@@ -120,4 +120,17 @@ nnoremap q: :q
 command! Q q
 
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Filetype specific options
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+" PEP8-y whitespace options
+au filetype python set tabstop=4
+au filetype python set softtabstop=4
+au filetype python set shiftwidth=4
+au filetype python set textwidth=88
+au filetype python set colorcolumn=88
+au filetype python set expandtab
+au filetype python set autoindent
+au filetype python set fileformat=unix
 
