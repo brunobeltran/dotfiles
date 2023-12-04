@@ -1,19 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-please_yes () {
-    read please yes
-    if [[ ( ! -z ${please+x} ) || "$please" != "please" || \
-          ( ! -z ${yes+x} ) || "$yes" != "yes" ]]; then
+please_yes() {
+    read -r please yes
+    if [[ -z ${please+x} || "$please" != "please" ||
+        -z ${yes+x} || "$yes" != "yes" ]]; then
         printf "Quitting...no changes were made.\n"
         exit 2
     fi
 }
 
-
 # safely get install.sh's directory (and, by proxy, the repo's directory)
-MY_PATH="`dirname \"$BASH_SOURCE\"`"
-MY_PATH="`( cd \"$MY_PATH\" && pwd )`"
+MY_PATH="$(dirname \"$BASH_SOURCE\")"
+MY_PATH="$( (cd $MY_PATH && pwd))"
 
 if [[ -z "$MY_PATH" ]]; then
     printf "Something went very wrong. Cannot access install.sh's directory.\n"
@@ -26,13 +25,13 @@ printf "Are you sure? (Type 'please yes' to continue): "
 please_yes
 
 # now thanks to directory's naming convention, we can drop in symlinks as needed
-for file in `ls dotfiles`; do
+for file in $(ls dotfiles); do
     linkname="$HOME/.$file"
     target="$MY_PATH/dotfiles/$file"
     if [[ "$file" == "config" ]]; then
         continue
     fi
-    if [[ -e "$linkname" || -h "$linkname" ]]; then
+    if [[ -e "$linkname" || -L "$linkname" ]]; then
         printf "Deleting old dotfile: %s\n" $linkname
         rm -rf "$linkname"
     fi
@@ -44,10 +43,10 @@ done
 # to keep it all in the repo, just particular parts,
 # so we individually symlink its components
 mkdir -p "$HOME/.config"
-for file in `ls dotfiles/config`; do
+for file in $(ls dotfiles/config); do
     linkname="$HOME/.config/$file"
     target="$MY_PATH/dotfiles/config/$file"
-    if [[ -e "$linkname" || -h "$linkname" ]]; then
+    if [[ -e "$linkname" || -L "$linkname" ]]; then
         printf "Deleting old .config entry: %s\n" $linkname
         rm -rf "$linkname"
     fi
