@@ -33,3 +33,4 @@ lspconfig.pyright.setup({
         },
     },
 })
+lspconfig.taplo.setup({})
