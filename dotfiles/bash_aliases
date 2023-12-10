@@ -71,7 +71,11 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         cd "${WORKTREE_ROOT}"
         ls
     }
-    _hgd() { (
+    # Implementation of `hgd`. Executes in a subshell in order to use `set`, and
+    # prints *only* the final directory that should be `cd`'d to to stdout on
+    # success---which means we must be careful to redirect the output of all
+    # commands when updating this function!
+    _hgd() { echo "$(
         worktree_path="${WORKTREE_ROOT}/$1"
         main_path="${WORKTREE_ROOT}/main"
         requested_ref="refs/heads/$1"
@@ -84,7 +88,7 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
             exit $?
         fi
         _INFO "Fetching 'origin' to ensure we know if the branch exists!"
-        git fetch origin
+        git fetch origin >/dev/null
         if git show-ref --verify --quiet "${requested_ref}"; then
             echo "Checking out existing branch...$1" &&
                 git worktree add "${worktree_path}" "$1" &&
@@ -101,28 +105,31 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
             exit 2
         fi
         _INFO "Pulling upstream changes to main before creating new branch!"
-        if ! { cd "${main_path}" && git pull upstream main; }; then
+        if ! { cd "${main_path}" && git pull upstream main >/dev/null; }; then
             _INFO "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!"
             exit 3
         fi
         _INFO "Creating new worktree on fresh branch based on 'main'!"
-        if ! { git worktree add "${worktree_path}" main -b "$1" && cd "${worktree_path}"; }; then
+        if ! { git worktree add "${worktree_path}" main -b "$1" >/dev/null && cd "${worktree_path}"; }; then
             _INFO "Failed to create worktree!"
             exit 4
         fi
         _INFO "Pulling/updating all submodules..."
-        git submodule update --init --recursive
+        git submodule update --init --recursive >/dev/null 2>&1
 
         _INFO "Kicking off some slow repository rules in the background..."
         _INFO "...it may take up to 5min for these to finish!"
         bazel build $INITIAL_TARGET >/dev/null 2>&1 &
-    ) }
+        pwd
+    )"; }
     hgd() {
         local worktree_path
         local subshell_exit_code
         worktree_path="$(_hgd "$1")"
         subshell_exit_code="$?"
-        [[ -d "${worktree_path}" ]] && cd "${worktree_path}"
+        [[ -d "${worktree_path}" ]] &&
+            echo "Taking you to ${worktree_path} in this shell..." &&
+            cd "${worktree_path}"
         return "${subshell_exit_code}"
     }
 
