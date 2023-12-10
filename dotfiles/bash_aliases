@@ -54,6 +54,16 @@ if [[ ! -d "${WORKTREE_ROOT}" ]]; then
     WORKTREE_ROOT="${HOME}/dbSDK"
 fi
 
+# Convenience no-op function for when we want to print a message only in bash
+# debug---i.e., `set -x`--- mode. Basically a more semantically-reasonable way
+# to do something like `echo "Debug message" >/dev/null`.
+_INFO() {
+    # shellcheck disable=SC2317
+    unused() {
+        :
+    }
+}
+
 # Instantiate Git worktree aliases for Digital Biology only if the WORKTREE_ROOT
 # exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
@@ -61,52 +71,61 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         cd "${WORKTREE_ROOT}"
         ls
     }
-    hgd() { (
-        set -euox pipefail
+    _hgd() { (
         worktree_path="${WORKTREE_ROOT}/$1"
         main_path="${WORKTREE_ROOT}/main"
         requested_ref="refs/heads/$1"
         main_ref="refs/heads/main"
+        set -euox pipefail
         if [[ -d "${worktree_path}" ]]; then
-            echo "Worktree exists, taking you there!" &&
+            _INFO "Worktree exists, taking you there!" &&
                 cd "${worktree_path}" &&
                 pwd
-            return $?
+            exit $?
         fi
-        echo "Fetching 'origin' to ensure we know if the branch exists!" >/dev/null
+        _INFO "Fetching 'origin' to ensure we know if the branch exists!"
         git fetch origin
         if git show-ref --verify --quiet "${requested_ref}"; then
             echo "Checking out existing branch...$1" &&
                 git worktree add "${worktree_path}" "$1" &&
                 cd "${worktree_path}" &&
                 pwd
-            return $?
+            exit $?
         fi
         if ! git show-ref --verify --quiet "${main_ref}"; then
-            echo "There does not seem to be a 'main' branch...please make one!" >/dev/null
-            return 1
+            _INFO "There does not seem to be a 'main' branch...please make one!"
+            exit 1
         fi
         if [[ ! -d "${main_path}" ]]; then
-            echo "There does not appear to be a worktree for the main branch...please make one!" >/dev/null
-            return 2
+            _INFO "There does not appear to be a worktree for the main branch...please make one!"
+            exit 2
         fi
-        echo "Pulling upstream changes to main before creating new branch!" >/dev/null
+        _INFO "Pulling upstream changes to main before creating new branch!"
         if ! { cd "${main_path}" && git pull upstream main; }; then
-            echo "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!" >/dev/null
-            return 3
+            _INFO "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!"
+            exit 3
         fi
-        echo "Creating new worktree on fresh branch based on 'main'!" >/dev/null
+        _INFO "Creating new worktree on fresh branch based on 'main'!"
         if ! { git worktree add "${worktree_path}" main -b "$1" && cd "${worktree_path}"; }; then
-            echo "Failed to create worktree!" >/dev/null
-            return 4
+            _INFO "Failed to create worktree!"
+            exit 4
         fi
-        echo "Pulling/updating all submodules..." >/dev/null
+        _INFO "Pulling/updating all submodules..."
         git submodule update --init --recursive
 
-        echo "Kicking off some slow repository rules in the background..." >/dev/null
-        echo "...it may take up to 5min for these to finish!" >/dev/null
+        _INFO "Kicking off some slow repository rules in the background..."
+        _INFO "...it may take up to 5min for these to finish!"
         bazel build $INITIAL_TARGET >/dev/null 2>&1 &
     ) }
+    hgd() {
+        local worktree_path
+        local subshell_exit_code
+        worktree_path="$(_hgd "$1")"
+        subshell_exit_code="$?"
+        [[ -d "${worktree_path}" ]] && cd "${worktree_path}"
+        return "${subshell_exit_code}"
+    }
+
     _exists_pr() {
         [[ "$#" -eq 2 ]] || return 255
         gh pr list --search "is:pr $2 head:$1" --json headRefName |
