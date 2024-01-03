@@ -91,29 +91,29 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         git fetch origin >/dev/null
         if git show-ref --verify --quiet "${requested_ref}"; then
             _INFO "Checking out existing branch...$1" &&
-                git worktree add "${worktree_path}" "$1" >/dev/null &&
-                cd "${worktree_path}" &&
-                pwd
-            exit $?
+                git worktree add "${worktree_path}" "$1" >/dev/null
+        else
+            if ! git show-ref --verify --quiet "${main_ref}"; then
+                _INFO "There does not seem to be a 'main' branch...please make one!"
+                exit 1
+            fi
+            if [[ ! -d "${main_path}" ]]; then
+                _INFO "There does not appear to be a worktree for the main branch...please make one!"
+                exit 2
+            fi
+            _INFO "Pulling upstream changes to main before creating new branch!"
+            if ! { cd "${main_path}" && git pull upstream main >/dev/null; }; then
+                _INFO "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!"
+                exit 3
+            fi
+            _INFO "Creating new worktree on fresh branch based on 'main'!"
+            if ! git worktree add "${worktree_path}" main -b "$1" >/dev/null; then
+                _INFO "Failed to create worktree!"
+                exit 4
+            fi
         fi
-        if ! git show-ref --verify --quiet "${main_ref}"; then
-            _INFO "There does not seem to be a 'main' branch...please make one!"
-            exit 1
-        fi
-        if [[ ! -d "${main_path}" ]]; then
-            _INFO "There does not appear to be a worktree for the main branch...please make one!"
-            exit 2
-        fi
-        _INFO "Pulling upstream changes to main before creating new branch!"
-        if ! { cd "${main_path}" && git pull upstream main >/dev/null; }; then
-            _INFO "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!"
-            exit 3
-        fi
-        _INFO "Creating new worktree on fresh branch based on 'main'!"
-        if ! { git worktree add "${worktree_path}" main -b "$1" >/dev/null && cd "${worktree_path}"; }; then
-            _INFO "Failed to create worktree!"
-            exit 4
-        fi
+        cd "${worktree_path}"
+
         _INFO "Pulling/updating all submodules..."
         git submodule update --init --recursive >/dev/null 2>&1
 
