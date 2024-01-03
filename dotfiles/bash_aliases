@@ -90,8 +90,8 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         _INFO "Fetching 'origin' to ensure we know if the branch exists!"
         git fetch origin >/dev/null
         if git show-ref --verify --quiet "${requested_ref}"; then
-            echo "Checking out existing branch...$1" &&
-                git worktree add "${worktree_path}" "$1" &&
+            _INFO "Checking out existing branch...$1" &&
+                git worktree add "${worktree_path}" "$1" >/dev/null &&
                 cd "${worktree_path}" &&
                 pwd
             exit $?
