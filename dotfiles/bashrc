@@ -24,10 +24,6 @@ stty stop undef
 if [ -f "${HOME}/.bash_aliases" ]; then
     . "${HOME}/.bash_aliases"
 fi
-# and centralize adding things to my PATH
-if [ -f "${HOME}/.set_path" ]; then
-    . "${HOME}/.set_path"
-fi
 
 # enable programmable completion features
 if [ -f /etc/bash_completion ] && ! shopt -oq posix; then
@@ -65,3 +61,9 @@ unset __conda_setup
 [[ -f "${HOME}/.passwords" ]] && source "${HOME}/.passwords"
 [[ -f "${HOME}/.fzf.bash" ]] && source "${HOME}/.fzf.bash"
 [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+# Finally, centralize adding things to my PATH and putting them in the correct
+# order.
+if [ -f "${HOME}/.set_path" ]; then
+    . "${HOME}/.set_path"
+fi

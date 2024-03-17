@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 ##
 # The following are appended to the path in the order they are found in the
 # `paths_to_append` array.
@@ -7,12 +9,6 @@ paths_to_append=(/bin /usr/bin /usr/local/bin /sbin /usr/sbin)
 
 # airwave connects windows VSTs to my pure-linux Bitwig Studio install
 paths_to_append+=(/opt/airwave/bin)
-
-for p in "${paths_to_append[@]}"; do
-    if [[ -d "${p}" && ! ":${PATH}:" == *":${p}:"* ]]; then
-        export PATH="${PATH}:${p}"
-    fi
-done
 
 ##
 # The following are prepended in reverse order, so they appear in the path in
@@ -28,9 +24,40 @@ paths_to_prepend+=("${HOME}/.cargo/bin")
 # Homebrew on Macs (and sometimes on Linux as well)!
 paths_to_prepend+=(/opt/homebrew/bin)
 
-for (( idx=${#paths_to_prepend[@]}-1 ; idx>=0 ; idx--)) ; do
-    p="${paths_to_prepend[idx]}"
-    if [[ -d "${p}" && ! ":${PATH}:" == *":${p}:"* ]]; then
-        export PATH="${p}:${PATH}"
+##
+# This logic actually performs the operations. To prevent an existing PATH
+# from mangling this order, we first **remove** all the paths we are going to
+# manually add.
+
+NEW_PATH=:"${PATH}":
+
+for p in "${paths_to_append[@]}"; do
+    NEW_PATH="${NEW_PATH//${p}/}"
+done
+for p in "${paths_to_prepend[@]}"; do
+    NEW_PATH="${NEW_PATH//${p}/}"
+done
+
+##
+# Now append.
+
+for p in "${paths_to_append[@]}"; do
+    if [[ -d "${p}" && ! "${NEW_PATH}" == *":${p}:"* ]]; then
+        NEW_PATH="${NEW_PATH}${p}:"
     fi
 done
+
+##
+# Now prepend.
+
+for ((idx = ${#paths_to_prepend[@]} - 1; idx >= 0; idx--)); do
+    p="${paths_to_prepend[idx]}"
+    if [[ -d "${p}" && (! "${NEW_PATH}" == *":${p}:"*) ]]; then
+        NEW_PATH=":${p}${NEW_PATH}"
+    fi
+done
+
+##
+# Finally, set the "official" PATH all at once.
+
+export PATH="${NEW_PATH:1:-1}"
