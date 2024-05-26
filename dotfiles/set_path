@@ -24,6 +24,13 @@ paths_to_prepend+=("${HOME}/.cargo/bin")
 # Homebrew on Macs (and sometimes on Linux as well)!
 paths_to_prepend+=(/opt/homebrew/bin)
 
+# Neovim on servers following
+# https://github.com/neovim/neovim/blob/master/INSTALL.md
+paths_to_prepend+=(/opt/nvim-linux64/bin)
+
+# Local install of fzf created by Bruno's dotfiles
+paths_to_prepend+=("${HOME}/.fzf/bin")
+
 ##
 # This logic actually performs the operations. To prevent an existing PATH
 # from mangling this order, we first **remove** all the paths we are going to
