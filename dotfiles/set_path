@@ -8,7 +8,7 @@
 paths_to_append=(/bin /usr/bin /usr/local/bin /sbin /usr/sbin)
 
 # airwave connects windows VSTs to my pure-linux Bitwig Studio install
-paths_to_append+=(/opt/airwave/bin)
+paths_to_append+=(/opt/airwave/bin /Applications/Inkscape.app/Contents/MacOS)
 
 ##
 # The following are prepended in reverse order, so they appear in the path in
