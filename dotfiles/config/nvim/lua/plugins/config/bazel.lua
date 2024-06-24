@@ -1,2 +1,1 @@
-require("bazel").setup({
-})
+-- require("bazel").setup({ })
