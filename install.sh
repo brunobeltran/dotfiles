@@ -11,31 +11,31 @@ please_yes() {
 }
 
 # safely get install.sh's directory (and, by proxy, the repo's directory)
-MY_PATH="$(dirname \"$BASH_SOURCE\")"
-MY_PATH="$( (cd $MY_PATH && pwd))"
+MY_PATH="$(dirname "${BASH_SOURCE[0]}")"
+MY_PATH="$( (cd "${MY_PATH}" && pwd))"
 
 if [[ -z "$MY_PATH" ]]; then
     printf "Something went very wrong. Cannot access install.sh's directory.\n"
     exit 1
 fi
 
-printf "About to replace the dotfiles in \n\t\t$HOME\n"
-printf "with their equivalents in \n\t\t$MY_PATH/dotfiles\n\n"
+printf "About to replace the dotfiles in \n\t\t%s\n" "${HOME}"
+printf "with their equivalents in \n\t\t%s/dotfiles\n\n" "${MY_PATH}"
 printf "Are you sure? (Type 'please yes' to continue): "
 please_yes
 
 # now thanks to directory's naming convention, we can drop in symlinks as needed
-for file in $(ls dotfiles); do
+for file in dotfiles/*; do
     linkname="$HOME/.$file"
     target="$MY_PATH/dotfiles/$file"
     if [[ "$file" == "config" ]]; then
         continue
     fi
     if [[ -e "$linkname" || -L "$linkname" ]]; then
-        printf "Deleting old dotfile: %s\n" $linkname
+        printf "Deleting old dotfile: %s\n" "${linkname}"
         rm -rf "$linkname"
     fi
-    printf "Creating symlink: %s -> %s\n" $linkname $target
+    printf "Creating symlink: %s -> %s\n" "${linkname}" "${target}"
     ln -s "$target" "$linkname"
 done
 
@@ -43,15 +43,15 @@ done
 # to keep it all in the repo, just particular parts,
 # so we individually symlink its components
 mkdir -p "$HOME/.config"
-for file in $(ls dotfiles/config); do
-    linkname="$HOME/.config/$file"
-    target="$MY_PATH/dotfiles/config/$file"
-    if [[ -e "$linkname" || -L "$linkname" ]]; then
-        printf "Deleting old .config entry: %s\n" $linkname
-        rm -rf "$linkname"
+for file in dotfiles/config/*; do
+    linkname="${HOME}/.config/${file}"
+    target="${MY_PATH}/dotfiles/config/${file}"
+    if [[ -e "${linkname}" || -L "${linkname}" ]]; then
+        printf "Deleting old .config entry: %s\n" "${linkname}"
+        rm -rf "${linkname}"
     fi
-    printf "Creating symlink: %s -> %s\n" $linkname $target
-    ln -s "$target" "$linkname"
+    printf "Creating symlink: %s -> %s\n" "${linkname}" "${target}"
+    ln -s "${target}" "${linkname}"
 done
 
 printf "NOTE: YOU HAVE TO MANUALLY RUN :PlugUpdate in Vim!\n"
