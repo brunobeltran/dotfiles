@@ -1,23 +1,46 @@
--- We mirror the configuration structure of github.com/NvChad/NvChad:
+-- We opt for the simplest possible organization
 --
--- 1. First require any core (Lua) helper utilities (currently none).
--- 2. Bootstrap Lazy.nvim (plugin manager) and other things using a dedicated
---    "bootstrap" module.
--- 3. Load in "simple" config (shared with vim) if it exists.
--- 4. Require our nvim-specific configuration, which is allowed to depend on
---    stuff that was bootstrapped in.
+-- Most of our Neovim "magic" comes from simply loading a nice set of plugins
+-- from "plugins".
+--
+-- Literally everything else is organized into a "config" folder. We require all
+-- "config.*" code from here, documenting what each require'd piece of code is
+-- doing.
 
-require("core")
+-- -- -- Bootstrap the environment
+--
+-- Setup our plugin manager.
+require("config.lazy")
+-- Some health checks vendored from `kickstart.nvim`.
+require("config.kickstart.health").check()
 
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-    require("core.bootstrap").lazy(lazypath)
-end
-vim.opt.rtp:prepend(lazypath)
+-- -- -- Vim-side Settings
+--
+-- Load configuration settings that are shared with Vim before our plugins, to
+-- allow them to be clobbered by new, neovim-specific code.
+require("config.shared")
 
-require("bruno")
-local shared_vim_config = os.getenv("HOME") .. "/.vim/shared.vim"
-require("core.shared").maybe_source(shared_vim_config)
-
-
+-- -- -- Load and configure all plugins.
+--
+-- We want to ensure our plugin config is loaded first, so that our later keymap
+-- code can feel free to simply directly "require" in the appropriate plugins.
 require("lazy").setup(require("plugins"))
+
+-- -- -- General Settings: display, buffer strategies, undo, history, etc.
+--
+-- Load configuration settings that were either redefined since we switched to
+-- neovim, or are neovim-specific.
+require("config.settings")
+
+-- -- -- KEYMAPS
+--
+-- Keymap-related settings are complex enough that they warrant their own file.
+-- TODO: migrate all the magic settings from "plugins" into here.
+require("config.keymaps")
+
+-- -- -- Other small utilities and helpers.
+--
+-- Manually-set / hard-coded filetype determination code (e.g.,
+require("config.filetypes")
+-- Diagnostics-related settings, e.g., enable "hover window" for LSP diagnostics.
+require("config.diagnostics")
