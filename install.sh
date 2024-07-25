@@ -26,9 +26,9 @@ please_yes
 
 # now thanks to directory's naming convention, we can drop in symlinks as needed
 for file in dotfiles/*; do
-    linkname="$HOME/.$file"
-    target="$MY_PATH/dotfiles/$file"
-    if [[ "$file" == "config" ]]; then
+    linkname="$HOME/.${file#dotfiles/}"
+    target="$MY_PATH/$file"
+    if [[ "$file" == "config" || "${file#dotfiles/}" == "config" ]]; then
         continue
     fi
     if [[ -e "$linkname" || -L "$linkname" ]]; then
@@ -44,8 +44,8 @@ done
 # so we individually symlink its components
 mkdir -p "$HOME/.config"
 for file in dotfiles/config/*; do
-    linkname="${HOME}/.config/${file}"
-    target="${MY_PATH}/dotfiles/config/${file}"
+    linkname="${HOME}/.config/${file#dotfiles/config/}"
+    target="${MY_PATH}/${file}"
     if [[ -e "${linkname}" || -L "${linkname}" ]]; then
         printf "Deleting old .config entry: %s\n" "${linkname}"
         rm -rf "${linkname}"
