@@ -64,6 +64,21 @@ _INFO() {
     }
 }
 
+dsync_to() {
+    server_number=$1
+    server_path=$2
+    shift
+    shift
+    rsync -avvP --no-times --no-perms "$@" "server-${server_number}.pleasant.digit.bio:${server_path}"
+}
+
+dsync_from() {
+    server_number=$1
+    server_path=$2
+    local_path=$3
+    rsync -avvP --no-times --no-perms "server-${server_number}.pleasant.digit.bio:${server_path}" "${local_path}"
+}
+
 # Instantiate Git worktree aliases for Digital Biology only if the WORKTREE_ROOT
 # exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
