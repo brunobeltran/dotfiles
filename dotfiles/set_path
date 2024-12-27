@@ -31,6 +31,9 @@ paths_to_prepend+=(/opt/nvim-linux64/bin)
 # Local install of fzf created by Bruno's dotfiles
 paths_to_prepend+=("${HOME}/.fzf/bin")
 
+# Mac-specific Kitty installation, for both `kitty` and `kitten`
+paths_to_prepend+=("/Applications/kitty.app/Contents/MacOS")
+
 ##
 # This logic actually performs the operations. To prevent an existing PATH
 # from mangling this order, we first **remove** all the paths we are going to
