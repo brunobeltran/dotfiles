@@ -4,7 +4,6 @@ set -euxo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BUILD_DIR="${SCRIPT_DIR}/build"
-DOTFILES_DIR="${SCRIPT_DIR}/dotfiles"
 
 if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
@@ -36,7 +35,7 @@ if ! which conda >/dev/null 2>&1; then
 fi
 
 # Many distros come with ancient fzf, install from source.
-if [[ ! -d ./fzf ]]; then
+if [[ ! -d "${BUILD_DIR}/fzf" ]]; then
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${BUILD_DIR}/fzf"
 fi
 if ! which fzf >/dev/null 2>&1; then
@@ -61,4 +60,4 @@ if ! which nvim >/dev/null 2>&1; then
 	cd ..
 fi
 
-stow --dir "${DOTFILES_DIR}" --target="${HOME}" --adopt --dotfiles
+stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles

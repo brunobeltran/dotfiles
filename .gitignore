@@ -1,6 +1,7 @@
 *~
 *.sw*
 *.add.spl
+build
 dotfiles/dot-vim/plugged
 dotfiles/dot-vim/.netrwhist
 dotfiles/dot-vim/temp_dirs
