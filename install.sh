@@ -2,9 +2,13 @@
 
 set -euxo pipefail
 
+##
+# Global constants.
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BUILD_DIR="${SCRIPT_DIR}/build"
 
+##
+# Determine all configuration that is OS- or architecture-dependent.
 if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -29,6 +33,7 @@ elif [[ -f "/etc/debian_version" ]]; then
 	sudo apt install ninja-build gettext cmake unzip curl build-essential
 fi
 
+##
 # Setup miniconda.
 if ! which conda >/dev/null 2>&1; then
 	wget -O miniconda.sh "${BUILD_DIR}/${miniconda_download_link}"
@@ -36,6 +41,7 @@ if ! which conda >/dev/null 2>&1; then
 	rm "${BUILD_DIR}/miniconda.sh"
 fi
 
+##
 # Many distros come with ancient fzf, install from source.
 FZF_DIR="${BUILD_DIR}/fzf"
 if [[ ! -d "${FZF_DIR}" ]]; then
@@ -48,11 +54,13 @@ if [[ ! -f "${FZF_DIR}/bin/fzf" ]]; then
 	"${FZF_DIR}/install" --no-update-rc --key-bindings --completion --xdg
 fi
 
+##
 # Install a nice shell prompt.
 if ! which starship >/dev/null 2>&1; then
 	curl -sS https://starship.rs/install.sh | sudo sh
 fi
 
+##
 # Build NeoVim from source.
 NEOVIM_SOURCE_DIR="${BUILD_DIR}/neovim-src"
 NEOVIM_BUILD_DIR="${BUILD_DIR}/neovim-build"
@@ -68,12 +76,16 @@ if [[ ! -f "${NEOVIM_BUILD_DIR}/bin/nvim" ]]; then
 	}
 fi
 
+##
 # Render the current build path into a file for use in `.set_path`.
 echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
+##
+# Actually install all "dotfiles".
 stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
 
-# Build our fonts install.
+##
+# Build and install our fonts directory.
 FONTS_DIR="${BUILD_DIR}/fonts"
 mkdir -p "${FONTS_DIR}"
 if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
@@ -81,6 +93,29 @@ if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
 	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
 fi
 stow --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
+# Validate fonts installation worked...it is very flaky/annoying on OS X.
 if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
 	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
 fi
+
+##
+# Validate install was clean
+#
+# If our dotfiles adoption led to any diff, we print an error message.
+{
+	cd "${SCRIPT_DIR}"
+	# First add to the tree to prevent new files from not showing up as a diff.
+	git add .
+	# Now update the index, to prevent "touch"ed files from showing as a diff
+	# even if there is no "real" diff.
+	git update-index --refresh
+	# With the above setup, this command will succeed only if there are no
+	# changes to our non-.gitignore'd files.
+	if ! git diff-index --quiet HEAD --; then
+		echo "WARNING: -- Dotfiles installation not complete! --"
+		echo "WARNING: "
+		echo "WARNING: Some of your pre-existing files seem to have conflicted"
+		echo "WARNING: with this repo. Please check if this was intended. If not,"
+		echo "WARNING: a simple $(git checkout) should complete the install!"
+	fi
+}
