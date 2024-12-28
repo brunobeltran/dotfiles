@@ -1,11 +1,9 @@
 # Bruno Beltran's Dotfiles.
 
-Feel free to use the install.sh script to install them, but you should probably change the relevant entries in `dotfiles/gitconfig` at least.
+Feel free to use the `install.sh` script to install them, but you should probably
+change the relevant entries in `dotfiles/gitconfig` at least.
 
-Also, make sure to do something like the following to see what you're installing
+When installing, if your current dotfiles conflict with any of the files that
+are being installed, they will be left unchanged and copied into this
+repository, so that you can use `git diff` see what the difference is.
 
-```bash
-for file in ls dotfiles; do 
-    diff -r "dotfiles/$file" "$HOME/.$file" >>install_dry_run.diff
-done
-```

@@ -1,66 +1,64 @@
 #!/bin/bash
-set -euo pipefail
 
-please_yes() {
-    read -r please yes
-    if [[ -z ${please+x} || "$please" != "please" ||
-        -z ${yes+x} || "$yes" != "yes" ]]; then
-        printf "Quitting...no changes were made.\n"
-        exit 2
-    fi
-}
+set -euxo pipefail
 
-# safely get install.sh's directory (and, by proxy, the repo's directory)
-MY_PATH="$(dirname "${BASH_SOURCE[0]}")"
-MY_PATH="$( (cd "${MY_PATH}" && pwd))"
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+BUILD_DIR="${SCRIPT_DIR}/build"
+DOTFILES_DIR="${SCRIPT_DIR}/dotfiles"
 
-if [[ -z "$MY_PATH" ]]; then
-    printf "Something went very wrong. Cannot access install.sh's directory.\n"
-    exit 1
+if [[ $OSTYPE == 'darwin'* ]]; then
+	if ! which brew >/dev/null 2>&1; then
+		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	fi
+	brew install bash stow kitty wget
+	miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+
+	# Setup deps for neovim source build.
+	brew install ninja cmake gettext curl
+elif [[ -f "/etc/debian_version" ]]; then
+	sudo apt update && sudo apt upgrade -y
+	sudo apt install git rsync tmux htop bash wget stow
+	if [[ $(uname -m) == "aarch64" ]]; then
+		miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
+	else
+		miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+	fi
+
+	# Setup deps for neovim source build.
+	sudo apt install ninja-build gettext cmake unzip curl build-essential
 fi
 
-printf "About to replace the dotfiles in \n\t\t%s\n" "${HOME}"
-printf "with their equivalents in \n\t\t%s/dotfiles\n\n" "${MY_PATH}"
-printf "Are you sure? (Type 'please yes' to continue): "
-please_yes
+# Setup miniconda.
+if ! which conda >/dev/null 2>&1; then
+	wget -O miniconda.sh "${BUILD_DIR}/${miniconda_download_link}"
+	bash "${BUILD_DIR}/miniconda.sh"
+	rm "${BUILD_DIR}/miniconda.sh"
+fi
 
-# now thanks to directory's naming convention, we can drop in symlinks as needed
-for file in dotfiles/*; do
-    linkname="$HOME/.${file#dotfiles/}"
-    target="$MY_PATH/$file"
-    if [[ "$file" == "config" || "${file#dotfiles/}" == "config" ]]; then
-        continue
-    fi
-    if [[ -e "$linkname" || -L "$linkname" ]]; then
-        printf "Deleting old dotfile: %s\n" "${linkname}"
-        rm -rf "$linkname"
-    fi
-    printf "Creating symlink: %s -> %s\n" "${linkname}" "${target}"
-    ln -s "$target" "$linkname"
-done
+# Many distros come with ancient fzf, install from source.
+if [[ ! -d ./fzf ]]; then
+	git clone --depth 1 https://github.com/junegunn/fzf.git "${BUILD_DIR}/fzf"
+fi
+if ! which fzf >/dev/null 2>&1; then
+	"${BUILD_DIR}/fzf/install"
+fi
 
-# config is an entire subdirectory, but we don't want
-# to keep it all in the repo, just particular parts,
-# so we individually symlink its components
-mkdir -p "$HOME/.config"
-for file in dotfiles/config/*; do
-    linkname="${HOME}/.config/${file#dotfiles/config/}"
-    target="${MY_PATH}/${file}"
-    if [[ -e "${linkname}" || -L "${linkname}" ]]; then
-        printf "Deleting old .config entry: %s\n" "${linkname}"
-        rm -rf "${linkname}"
-    fi
-    printf "Creating symlink: %s -> %s\n" "${linkname}" "${target}"
-    ln -s "${target}" "${linkname}"
-done
+# Install a nice shell prompt.
+if ! which starship >/dev/null 2>&1; then
+	curl -sS https://starship.rs/install.sh | sudo sh
+fi
 
-printf "NOTE: YOU HAVE TO MANUALLY RUN :PlugUpdate in Vim!\n"
-printf "\n"
-printf "This installer can also install some dependencies (e.g. fonts for\n"
-printf "powerline, etc.), would you like to continue?\n"
-printf "(Type 'please yes' to continue): "
-please_yes
+# Build NeoVim from source.
+if [[ ! -d "${BUILD_DIR}/neovim" ]]; then
+	git clone https://github.com/neovim/neovim.git "${BUILD_DIR}/neovim"
+fi
+if ! which nvim >/dev/null 2>&1; then
+	cd ./neovim
+	sudo mkdir -p /opt/nvim
+	sudo chown "${USER}" /opt/nvim
+	make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=/opt/nvim
+	make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX=/opt/nvim install
+	cd ..
+fi
 
-for helper in dependencies/*; do
-    bash "${helper}"
-done
+stow --dir "${DOTFILES_DIR}" --target="${HOME}" --adopt --dotfiles

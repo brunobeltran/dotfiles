@@ -1,8 +1,8 @@
 *~
 *.sw*
 *.add.spl
-dotfiles/vim/plugged
-dotfiles/vim/.netrwhist
-dotfiles/vim/temp_dirs
-dotfiles/tmux/plugins
-dotfiles/config/kitty/kitty.conf.bak
+dotfiles/dot-vim/plugged
+dotfiles/dot-vim/.netrwhist
+dotfiles/dot-vim/temp_dirs
+dotfiles/dot-tmux/plugins
+dotfiles/dot-config/kitty/kitty.conf.bak
