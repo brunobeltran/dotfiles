@@ -1,5 +1,12 @@
 # shellcheck shell=bash
 
+# Load in the install path of our dotfiles. Anything we build from source
+# ourselves will be relative to this path.
+DOTFILES_BUILD_PATH=
+if [[ -f "${HOME}/.dotfiles-build-path" ]]; then
+    DOTFILES_BUILD_PATH=$(cat "${HOME}/.dotfiles-build-path")
+fi
+
 ##
 # The following are appended to the path in the order they are found in the
 # `paths_to_append` array.
@@ -17,6 +24,9 @@ paths_to_append+=(/opt/airwave/bin /Applications/Inkscape.app/Contents/MacOS)
 # I like begin able to execute things in the working directory with highest
 # priority
 paths_to_prepend=("." "${HOME}/bin")
+
+# Highest non-local priority goes to our from-source builds.
+paths_to_prepend+=("${DOTFILES_BUILD_PATH}/neovim-build/bin" "${DOTFILES_BUILD_PATH}/fzf/bin")
 
 # For rust developement.
 paths_to_prepend+=("${HOME}/.cargo/bin")
@@ -42,11 +52,18 @@ paths_to_prepend+=("/Applications/kitty.app/Contents/MacOS")
 NEW_PATH=:"${PATH}":
 
 for p in "${paths_to_append[@]}"; do
-    NEW_PATH="${NEW_PATH//${p}/}"
+    while [[ "${NEW_PATH}" == *":${p}:"* ]]; do
+        NEW_PATH="${NEW_PATH//:${p}:/}"
+    done
 done
 for p in "${paths_to_prepend[@]}"; do
-    NEW_PATH="${NEW_PATH//${p}/}"
+    while [[ "${NEW_PATH}" == *":${p}:"* ]]; do
+        NEW_PATH="${NEW_PATH//:${p}:/}"
+    done
 done
+# The above will not create any empty path entries, but just in case some
+# predate this script running, we remove them anyway for cleanliness.
+NEW_PATH="${NEW_PATH//::/}"
 
 ##
 # Now append.

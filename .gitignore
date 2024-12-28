@@ -7,3 +7,10 @@ dotfiles/dot-vim/.netrwhist
 dotfiles/dot-vim/temp_dirs
 dotfiles/dot-tmux/plugins
 dotfiles/dot-config/kitty/kitty.conf.bak
+
+# Created by the FZF installer, so we let them just exist out-of-band.
+dotfiles/dot-config/fish/
+dotfiles/dot-config/fzf/
+
+# Created by us at install-time.
+dotfiles/dot-dotfiles-build-path
