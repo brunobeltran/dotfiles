@@ -11,6 +11,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	fi
 	brew install bash stow kitty wget
 	miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+	fonts_install_dir="${HOME}/Library/Fonts"
 
 	# Setup deps for neovim source build.
 	brew install ninja cmake gettext curl
@@ -22,6 +23,7 @@ elif [[ -f "/etc/debian_version" ]]; then
 	else
 		miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 	fi
+	fonts_install_dir="${HOME}/.local/share/fonts"
 
 	# Setup deps for neovim source build.
 	sudo apt install ninja-build gettext cmake unzip curl build-essential
@@ -70,3 +72,15 @@ fi
 echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
+
+# Build our fonts install.
+FONTS_DIR="${BUILD_DIR}/fonts"
+mkdir -p "${FONTS_DIR}"
+if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
+	wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
+	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
+fi
+stow --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
+if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
+	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
+fi
