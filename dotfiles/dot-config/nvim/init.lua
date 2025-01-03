@@ -74,8 +74,8 @@ end, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', function()
   return vim.diagnostic.jump { count = 1, float = true }
 end, { desc = 'Go to next [D]iagnostic message' })
-vim.keymap.set('n', '<leader>oe', vim.diagnostic.open_float, { desc = '[O]pen diagnostic [E]rror messages' })
-vim.keymap.set('n', '<leader>oq', vim.diagnostic.setloclist, { desc = "[O]pen [Q]uickfix 'location list'" })
+vim.keymap.set('n', '<leader>te', vim.diagnostic.open_float, { desc = '[T]oggle diagnostic [E]rror messages' })
+vim.keymap.set('n', '<leader>tq', vim.diagnostic.setloclist, { desc = "[T]oggle [Q]uickfix 'location list'" })
 
 -- Git
 vim.keymap.set('n', '<leader>Ga', vim.cmd.Gwrite, { desc = '[G]it [A]dd current file' })
@@ -85,7 +85,7 @@ vim.keymap.set('n', '<leader>Gc', function()
 end, { desc = '[G]it [C]ommit' })
 vim.keymap.set('n', '<leader>GD', vim.cmd.Gdiff, { desc = '[G]it [D]iff with Fugitive' })
 vim.keymap.set('n', '<leader>Gd', vim.cmd.Gvdiffsplit, { desc = '[G]it [d]iffsplit current file' })
-vim.keymap.set('n', '<leader>Gr', vim.cmd.Gread, { desc = '[G]it [R]ead/Checkout current file' })
+vim.keymap.set('n', '<leader>Gr', vim.cmd.Gread, { desc = '[G]it [R]ead/Checkout/Reset current file' })
 vim.keymap.set('n', '<leader>Gl', function()
   vim.cmd [[Git! lg ]]
 end, { desc = '[G]it [l]g preview' })
@@ -136,16 +136,22 @@ vim.keymap.set('n', ']q', ':cnext<CR>', { desc = 'Jump to next (global) quickfix
 vim.keymap.set('n', '[q', ':cprev<CR>', { desc = 'Jump to previous (global) quickfix list entry' })
 
 -- Change into the directory of the current buffer.
-vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>', { desc = '[c]hange [d]irectory to match current file' })
+vim.keymap.set('n', '<leader>gcd', ':cd %:h<CR>', { desc = "[g]oto [c]urrent file's [d]irectory" })
 
-vim.keymap.set('n', '<leader>sb', ':BazelSelectTarget<CR>', { desc = '[S]earch [B]azel targets that dep on current file' })
+vim.keymap.set('n', '<leader>st', ':BazelSelectTarget<CR>', { desc = '[S]earch Bazel [t]argets that dep on current file' })
 
 -- Undotree interface
 vim.keymap.set('n', '<leader>tu', vim.cmd.UndotreeToggle, { desc = '[T]oggle [U]ndotree viewer' })
 
+-- Treesitter
+-- I find it hard to remember the :InspectTree and :EditQuery commands, so we
+-- add some shortcuts to make them more discoverable.
+vim.keymap.set('n', '<leader>tts', vim.cmd.InspectTree, { desc = '[T]oggle [t]reesitter [s]plit' })
+vim.keymap.set('n', '<leader>ttq', vim.cmd.EditQuery, { desc = '[T]oggle [t]reesitter [q]uery preview' })
+
 -- Convenience for hard-to-do things.
-vim.keymap.set('n', '<leader>ill', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>', {
-  desc = '[I]gnore [L]ine [L]ength error',
+vim.keymap.set('n', '<leader>fll', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>', {
+  desc = '[F]ix [L]ine [L]ength error',
 })
 
 -- [[ Basic Autocommands ]]
@@ -210,6 +216,7 @@ require('lazy').setup({
   'tpope/vim-surround', -- Expand the known set of delimiters.
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  'tpope/vim-fugitive', -- Git integration, old school
   'mbbill/undotree', -- Visualize Vim's "Undotree"
 
   -- NOTE: Plugins can also be added by using a table,
@@ -218,6 +225,7 @@ require('lazy').setup({
   --
   -- Use `opts = {}` to force a plugin to be loaded.
   --
+  { 'akinsho/bufferline.nvim', version = '*', dependencies = 'nvim-tree/nvim-web-devicons' },
 
   -- Here is a more advanced example where we pass configuration
   -- options to `gitsigns.nvim`. This is equivalent to the following Lua:
@@ -234,10 +242,63 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      on_attach = function(bufnr)
+        local gitsigns = require 'gitsigns'
+
+        local function map(mode, l, r, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, l, r, opts)
+        end
+
+        -- Navigation
+        map('n', ']h', function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']h', bang = true }
+          else
+            gitsigns.nav_hunk 'next'
+          end
+        end, { desc = 'Jump to next [h]unk / git change' })
+
+        map('n', '[h', function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[h', bang = true }
+          else
+            gitsigns.nav_hunk 'prev'
+          end
+        end, { desc = 'Jump to previous [h]unk / git change' })
+
+        -- Actions
+        -- visual mode
+        map('v', '<leader>Ga', function()
+          gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = '[G]it [A]dd hunk' })
+        map('v', '<leader>hr', function()
+          gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = '[G]it [R]eset hunk' })
+        -- normal mode
+        map('n', '<leader>Gha', gitsigns.stage_hunk, { desc = '[G]it [h]unk [s]tage' })
+        map('n', '<leader>Ghr', gitsigns.reset_hunk, { desc = '[G]it [h]unk [r]eset' })
+        map('n', '<leader>Ghu', gitsigns.undo_stage_hunk, { desc = '[G]it [h]unk [u]ndo stage' })
+        map('n', '<leader>Gp', gitsigns.preview_hunk, { desc = '[G]it [p]review hunk' })
+        map('n', '<leader>Gb', gitsigns.blame_line, { desc = '[G]it [b]lame line' })
+        -- Toggles
+        map('n', '<leader>tb', gitsigns.toggle_current_line_blame, { desc = '[T]oggle git show [b]lame line' })
+        map('n', '<leader>tD', gitsigns.toggle_deleted, { desc = '[T]oggle git show [D]eleted' })
+      end,
     },
   },
-
-  'tpope/vim-fugitive',
+  { -- Add indentation guides even on blank lines
+    'lukas-reineke/indent-blankline.nvim',
+    -- Enable `lukas-reineke/indent-blankline.nvim`
+    -- See `:help ibl`
+    main = 'ibl',
+    opts = {
+      indent = {
+        char = '▏',
+      },
+    },
+  },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
@@ -297,7 +358,9 @@ require('lazy').setup({
       -- Document existing key chains
       spec = {
         { '<leader>G', group = '[G]it' },
-        { '<leader>i', group = '[i]gnore' },
+        { '<leader>b', group = '[b]uffer' },
+        { '<leader>f', group = '[f]ix' },
+        { '<leader>fl', group = '[f]ix [l]ine error via NOQA' },
         -- "[G]oto" sometimes directly goes, but often pops up a search window
         -- with options. For regular "goto definition", <C-]> is still fine.
         { '<leader>g', group = '[g]oto' },
@@ -305,6 +368,7 @@ require('lazy').setup({
         { '<leader>r', group = '[r]ename' },
         { '<leader>s', group = '[s]earch' },
         { '<leader>t', group = '[t]oggle' },
+        { '<leader>tt', group = '[t]oggle [t]reesitter' },
         -- Maybe re-instate once I start using build-related commands?
         -- { '<leader>w', group = '[W]orkspace' },
       },
@@ -396,7 +460,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>sb', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -531,7 +595,7 @@ require('lazy').setup({
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
-          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
+          map('<leader>fx', vim.lsp.buf.code_action, '[F]i[x]/Code Action', { 'n', 'x' })
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -894,7 +958,23 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'dockerfile',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'regex',
+        'query',
+        'python',
+        'sql',
+        'vim',
+        'vimdoc',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -913,33 +993,10 @@ require('lazy').setup({
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
-
-  -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
-  -- init.lua. If you want these files, they are in the repository, so you can just download them and
-  -- place them in the correct locations.
-
-  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
   --
-  --  Here are some example plugins that I've included in the Kickstart repository.
-  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
-  --
+  -- TODO: Incorporate equivalents to kickstart's debug/lint configs.
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
-
-  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
-  --    This is the easiest way to modularize your config.
-  --
-  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
-  --
-  -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
-  -- Or use telescope!
-  -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
-  -- you can continue same window with `<space>sr` which resumes last telescope search
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
