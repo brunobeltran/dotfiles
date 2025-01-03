@@ -90,8 +90,12 @@ vim.keymap.set('n', '<leader>Gl', function()
   vim.cmd [[Git! lg ]]
 end, { desc = '[G]it [l]g preview' })
 vim.keymap.set('n', '<leader>GL', vim.cmd.Glog, { desc = '[G]it [L]og' })
-vim.keymap.set('n', '<leader>Gps', vim.cmd [[Dispatch! git push]], { desc = '[G]it [P]u[s]h' })
-vim.keymap.set('n', '<leader>Gpl', vim.cmd [[Dispatch! git pull]], { desc = '[G]it [P]u[l]l' })
+vim.keymap.set('n', '<leader>Gps', function()
+  vim.cmd [[Dispatch! git push]]
+end, { desc = '[G]it [P]u[s]h' })
+vim.keymap.set('n', '<leader>Gpl', function()
+  vim.cmd [[Dispatch! git pull]]
+end, { desc = '[G]it [P]u[l]l' })
 
 -- Keybinds to make split navigation easier.  # NOQA: E501
 --  Use CTRL+<hjkl> to switch between windows
@@ -692,7 +696,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black', 'ruff' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
