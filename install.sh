@@ -13,7 +13,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 	fi
-	brew install bash stow kitty wget
+	brew install bash stow ghostty wget
 	miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 	fonts_install_dir="${HOME}/Library/Fonts"
 
