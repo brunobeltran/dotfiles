@@ -196,7 +196,7 @@ endif
 
 "{{{ => Undotree
 
-nnoremap <leader>U :UndotreeToggle<CR>
+nnoremap <leader>tu :UndotreeToggle<CR>
 
 "}}}
 

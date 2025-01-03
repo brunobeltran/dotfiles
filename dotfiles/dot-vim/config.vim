@@ -36,6 +36,10 @@ endif
 " => VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+" Fix mouse=a to use the right ttymouse. Neovim doesn't need this tty stuff, but
+" `set mouse=a` _is_ set in `shared.vim`.
+set ttymouse=xterm2
+
 " Set 3 lines to the cursor - when moving vertically using j/k
 set so=3
 

@@ -26,6 +26,10 @@ vim.opt.showmode = false
 
 -- Save undo history, not in shared.vim because we use the default
 -- nvim-specific folder here.
+vim.opt.swapfile = true
+vim.opt.backupdir = os.getenv 'HOME' .. '/.vim/temp_dirs/nvim-backups'
+vim.opt.backup = true
+vim.opt.undodir = os.getenv 'HOME' .. '/.vim/temp_dirs/nvim-undodir'
 vim.opt.undofile = true
 
 -- Decrease mapped sequence wait time
@@ -42,12 +46,54 @@ vim.opt.inccommand = 'split'
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
-vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>', { desc = 'Remove highlights from search' })
+local function _delete_trailing_whitespace()
+  local save = vim.fn.winsaveview()
+  local function _remove_line_trailing()
+    return vim.cmd [[silent %s/\s+$//e]]
+  end
+  local function _remove_file_trailing()
+    return vim.cmd [[silent %s#($\n\s*)+%$##]]
+  end
+  pcall(_remove_line_trailing)
+  pcall(_remove_file_trailing)
+  vim.fn.winrestview(save)
+end
+local function _cleanup_save_and_clear()
+  _delete_trailing_whitespace()
+  vim.cmd [[nohlsearch]]
+  vim.cmd [[redraw!]]
+  vim.cmd [[w]]
+end
+vim.keymap.set('n', '<leader><CR>', _cleanup_save_and_clear, { desc = 'Cleanup whitespace, save, clear highlighting' })
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '[d', function()
+  return vim.diagnostic.jump { count = -1, float = true }
+end, { desc = 'Go to previous [D]iagnostic message' })
+vim.keymap.set('n', ']d', function()
+  return vim.diagnostic.jump { count = 1, float = true }
+end, { desc = 'Go to next [D]iagnostic message' })
+vim.keymap.set('n', '<leader>oe', vim.diagnostic.open_float, { desc = '[O]pen diagnostic [E]rror messages' })
+vim.keymap.set('n', '<leader>oq', vim.diagnostic.setloclist, { desc = "[O]pen [Q]uickfix 'location list'" })
 
--- Keybinds to make split navigation easier.
+-- Git
+vim.keymap.set('n', '<leader>Ga', vim.cmd.Gwrite, { desc = '[G]it [A]dd current file' })
+vim.keymap.set('n', '<leader>Gs', vim.cmd.Gstatus, { desc = '[G]it [S]tatus' })
+vim.keymap.set('n', '<leader>Gc', function()
+  vim.cmd [[ Gcommit -v -q ]]
+end, { desc = '[G]it [C]ommit' })
+vim.keymap.set('n', '<leader>GD', vim.cmd.Gdiff, { desc = '[G]it [D]iff with Fugitive' })
+vim.keymap.set('n', '<leader>Gd', vim.cmd.Gvdiffsplit, { desc = '[G]it [d]iffsplit current file' })
+vim.keymap.set('n', '<leader>Gr', vim.cmd.Gread, { desc = '[G]it [R]ead/Checkout current file' })
+vim.keymap.set('n', '<leader>Gl', function()
+  vim.cmd [[Git! lg ]]
+end, { desc = '[G]it [l]g preview' })
+vim.keymap.set('n', '<leader>GL', vim.cmd.Glog, { desc = '[G]it [L]og' })
+vim.keymap.set('n', '<leader>Gps', vim.cmd [[Dispatch! git push]], { desc = '[G]it [P]u[s]h' })
+vim.keymap.set('n', '<leader>Gpl', vim.cmd [[Dispatch! git pull]], { desc = '[G]it [P]u[l]l' })
+
+-- Keybinds to make split navigation easier.  # NOQA: E501
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
@@ -61,16 +107,15 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Use the "go up one directory" mapping from netrw to also open netrw.
 vim.keymap.set('n', '-', function()
   vim.cmd 'Ex'
-end)
--- Paste without losing your copy buffer!
-vim.keymap.set('x', '<leader>p', '"_dP')
+end, { desc = "Open current file's directory in NetRW (i.e., view folder contents)." })
+vim.keymap.set('x', '<leader>p', '"_dP', { desc = 'Paste without losing your copy buffer' })
 
 -- Move visually-selected lines up and down (fixing indenting dynamically).
-vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
-vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv", { desc = 'Shift current line downward' })
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv", { desc = 'Shift current line upward' })
 
 -- Preserve cursor location when using J.
-vim.keymap.set('n', 'J', 'mzJ`z')
+vim.keymap.set('n', 'J', 'mzJ`z', { desc = 'Shift current line downward' })
 
 -- Preserve cursor in center when searching or navigating.
 vim.keymap.set('n', '<C-d>', '<C-d>zz')
@@ -80,19 +125,24 @@ vim.keymap.set('n', 'N', 'Nzzzv')
 
 -- Keep me from mistakenly throwing away edits done when changing vertical
 -- blocks.
-vim.keymap.set('i', '<C-c>', '<Esc>')
+vim.keymap.set('i', '<C-c>', '<Esc>', { desc = 'Send <Esc> with <C-c>' })
 
 -- -- Typing the colon is such a slog.
-vim.keymap.set('n', '<leader>cn', ':cnext<CR>')
-vim.keymap.set('n', '<leader>cp', ':cprev<CR>')
+vim.keymap.set('n', ']q', ':cnext<CR>', { desc = 'Jump to next (global) quickfix list entry' })
+vim.keymap.set('n', '[q', ':cprev<CR>', { desc = 'Jump to previous (global) quickfix list entry' })
 
 -- Change into the directory of the current buffer.
-vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>')
+vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>', { desc = '[c]hange [d]irectory to match current file' })
 
-vim.keymap.set('n', '<leader>bt', ':BazelSelectTarget<CR>')
+vim.keymap.set('n', '<leader>sb', ':BazelSelectTarget<CR>', { desc = '[S]earch [B]azel targets that dep on current file' })
+
+-- Undotree interface
+vim.keymap.set('n', '<leader>tu', vim.cmd.UndotreeToggle, { desc = '[T]oggle [U]ndotree viewer' })
 
 -- Convenience for hard-to-do things.
-vim.keymap.set('n', '<leader>ltl', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>')
+vim.keymap.set('n', '<leader>ill', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>', {
+  desc = '[I]gnore [L]ine [L]ength error',
+})
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -107,6 +157,27 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
+
+-- To get full diagnostic from LSP, simply hold the cursor.
+-- updatetime set in `shared.vim`.
+vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+  group = vim.api.nvim_create_augroup('float_diagnostic', { clear = true }),
+  callback = function()
+    vim.diagnostic.open_float(nil, { focus = false })
+  end,
+})
+
+-- [[ Custom Filetype Patterns ]]
+vim.filetype.add {
+  filename = {
+    ['dot-bash_aliases'] = 'sh',
+    ['.bash_aliases'] = 'sh',
+    ['dot-set_path'] = 'sh',
+    ['.set_path'] = 'sh',
+    ['dot-bash_completion'] = 'sh',
+    ['.bash_completion'] = 'sh',
+  },
+}
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
@@ -135,6 +206,7 @@ require('lazy').setup({
   'tpope/vim-surround', -- Expand the known set of delimiters.
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  'mbbill/undotree', -- Visualize Vim's "Undotree"
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -220,13 +292,17 @@ require('lazy').setup({
 
       -- Document existing key chains
       spec = {
-        { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
-        { '<leader>d', group = '[D]ocument' },
-        { '<leader>r', group = '[R]ename' },
-        { '<leader>s', group = '[S]earch' },
-        { '<leader>w', group = '[W]orkspace' },
-        { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>G', group = '[G]it' },
+        { '<leader>i', group = '[i]gnore' },
+        -- "[G]oto" sometimes directly goes, but often pops up a search window
+        -- with options. For regular "goto definition", <C-]> is still fine.
+        { '<leader>g', group = '[g]oto' },
+        { '<leader>o', group = '[o]pen' },
+        { '<leader>r', group = '[r]ename' },
+        { '<leader>s', group = '[s]earch' },
+        { '<leader>t', group = '[t]oggle' },
+        -- Maybe re-instate once I start using build-related commands?
+        -- { '<leader>w', group = '[W]orkspace' },
       },
     },
   },
@@ -310,7 +386,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
+      vim.keymap.set('n', '<leader>sm', builtin.builtin, { desc = '[S]earch Categories ([M]eta-Search)"' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
@@ -419,39 +495,39 @@ require('lazy').setup({
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
-          map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+          map('<leader>gd', require('telescope.builtin').lsp_definitions, '[G]oto [d]efinition')
+
+          -- WARN: This is not Goto Definition, this is Goto Declaration.
+          --  For example, in C this would take you to the header.
+          map('<leader>gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
           -- Find references for the word under your cursor.
-          map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+          map('<leader>gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
 
           -- Jump to the implementation of the word under your cursor.
           --  Useful when your language has ways of declaring types without an actual implementation.
-          map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+          map('<leader>gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
 
           -- Jump to the type of the word under your cursor.
           --  Useful when you're not sure what type a variable is and you want to see
           --  the definition of its *type*, not where it was *defined*.
-          map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+          map('<leader>gT', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
-          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>ss', require('telescope.builtin').lsp_document_symbols, '[S]earch LSP [S]ymbols')
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
-          map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+          map('<leader>sw', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[S]earch [W]orkspace')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('<leader>ri', vim.lsp.buf.rename, '[R]ename [I]dentifier')
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
-
-          -- WARN: This is not Goto Definition, this is Goto Declaration.
-          --  For example, in C this would take you to the header.
-          map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
@@ -495,14 +571,14 @@ require('lazy').setup({
       })
 
       -- Change diagnostic symbols in the sign column (gutter)
-      -- if vim.g.have_nerd_font then
-      --   local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
-      --   local diagnostic_signs = {}
-      --   for type, icon in pairs(signs) do
-      --     diagnostic_signs[vim.diagnostic.severity[type]] = icon
-      --   end
-      --   vim.diagnostic.config { signs = { text = diagnostic_signs } }
-      -- end
+      if vim.g.have_nerd_font then
+        local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
+        local diagnostic_signs = {}
+        for type, icon in pairs(signs) do
+          diagnostic_signs[vim.diagnostic.severity[type]] = icon
+        end
+        vim.diagnostic.config { signs = { text = diagnostic_signs } }
+      end
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -587,7 +663,7 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        '<leader>F',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
@@ -747,15 +823,25 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
+    opts = {},
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight'.
+      --
+      -- We choose this one to slightly mis-match catppuccin, so that (Neo)vim
+      -- panes are distinguishable easily from terminal panes in tmux.
+      vim.cmd.colorscheme 'tokyonight-day'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
     end,
+  },
+  {
+    'catppuccin/nvim',
+    name = 'catppuccin',
+    priority = 1000,
+    opts = { flavour = 'latte' },
   },
 
   -- Highlight todo, notes, etc in comments
