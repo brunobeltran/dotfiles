@@ -50,16 +50,16 @@ paths_to_prepend+=("/Applications/kitty.app/Contents/MacOS")
 # manually add.
 
 NEW_PATH=:"${PATH}":
-
 for p in "${paths_to_append[@]}"; do
-    while [[ "${NEW_PATH}" == *":${p}:"* ]]; do
-        NEW_PATH="${NEW_PATH//:${p}:/}"
-    done
+    if [[ "${NEW_PATH}" == *":${p}:"* ]]; then
+        # Double-slash removes _all_ occurences.
+        NEW_PATH="${NEW_PATH//:${p}:/:}"
+    fi
 done
 for p in "${paths_to_prepend[@]}"; do
-    while [[ "${NEW_PATH}" == *":${p}:"* ]]; do
-        NEW_PATH="${NEW_PATH//:${p}:/}"
-    done
+    if [[ "${NEW_PATH}" == *":${p}:"* ]]; then
+        NEW_PATH="${NEW_PATH//:${p}:/:}"
+    fi
 done
 # The above will not create any empty path entries, but just in case some
 # predate this script running, we remove them anyway for cleanliness.
