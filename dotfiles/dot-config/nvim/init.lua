@@ -4,6 +4,19 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local function _close_window_matching(pattern)
+  local window_was_closed = false
+  for _, wnr in ipairs(vim.api.nvim_list_wins()) do
+    local buffer = vim.api.nvim_win_get_buf(wnr)
+    local buffer_name = vim.api.nvim_buf_get_name(buffer)
+    if buffer_name:match(pattern) then
+      vim.api.nvim_win_close(wnr, true)
+      window_was_closed = true
+    end
+  end
+  return window_was_closed
+end
+
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
 
@@ -146,8 +159,18 @@ vim.keymap.set('n', '<leader>tu', vim.cmd.UndotreeToggle, { desc = '[T]oggle [U]
 -- Treesitter
 -- I find it hard to remember the :InspectTree and :EditQuery commands, so we
 -- add some shortcuts to make them more discoverable.
-vim.keymap.set('n', '<leader>tts', vim.cmd.InspectTree, { desc = '[T]oggle [t]reesitter [s]plit' })
-vim.keymap.set('n', '<leader>ttq', vim.cmd.EditQuery, { desc = '[T]oggle [t]reesitter [q]uery preview' })
+local function _toggle_ts_tree()
+  if not _close_window_matching '.*Syntax tree for .*' then
+    vim.cmd.InspectTree()
+  end
+end
+vim.keymap.set('n', '<leader>tts', _toggle_ts_tree, { desc = '[T]oggle [t]reesitter [s]plit' })
+local function _toggle_ts_query()
+  if not _close_window_matching 'query_editor.scm$' then
+    vim.cmd.EditQuery()
+  end
+end
+vim.keymap.set('n', '<leader>ttq', _toggle_ts_query, { desc = '[T]oggle [t]reesitter [q]uery preview' })
 
 -- Convenience for hard-to-do things.
 vim.keymap.set('n', '<leader>fll', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>', {
