@@ -5,9 +5,6 @@
 " Sets how many lines of history VIM has to remember
 set history=10000
 
-" relative line numbers for awesome movement
-set relativenumber
-
 " Enable filetype plugins
 filetype plugin on
 filetype indent on
@@ -38,8 +35,6 @@ endif
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" for non-gvim goodness
-set mouse=a
 
 " Set 3 lines to the cursor - when moving vertically using j/k
 set so=3
@@ -198,7 +193,7 @@ if empty(glob($HOME.'/.vim/temp_dirs/undodir'))
     call mkdir($HOME.'/.vim/temp_dirs/undodir', 'p')
 endif
 set undodir=~/.vim/temp_dirs/undodir
-set undofile
+set undofile  " Not in shared.vim since nvim uses different folder.
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

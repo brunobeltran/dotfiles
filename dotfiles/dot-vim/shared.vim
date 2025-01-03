@@ -19,9 +19,10 @@ set textwidth=80
 
 set si " Smart indent
 set wrap " Wrap lines
+set breakindent " Wrapped lines restart with same indent as previous line
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => VIM user interface
+" => VIM user interface (GUI settings)
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Turn on the WiLd menu
@@ -59,6 +60,29 @@ set hlsearch
 " Makes search act like search in modern browsers
 set incsearch
 
+" Use relative line numbers but also show the current line.
+set number
+set relativenumber
+
+" Use the 'sign' column (e.g., git +/~, etc.).
+set signcolumn=yes
+
+" for non-gvim goodness
+set mouse=a
+
+" Highlight full line that cursor is on, regardless of which window is active.
+set cursorline
+
+" Minimal number of screen lines to keep above and below the cursor.
+set scrolloff=10
+
+" Sets how neovim will display certain whitespace characters in the editor.
+"  See `:help 'list'`
+"  and `:help 'listchars'`
+set list
+set listchars=tab:»\ ,trail:·,nbsp:␣
+
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Netrw settings (Vim's built-in file manager)
@@ -71,6 +95,9 @@ let g:netrw_list_hide= '.*\.swp$,.*\.pyc$,^\./$,^\.\./$'
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+set splitright
+set splitbelow
 
 " Close the current buffer
 map <leader>bx :Bclose<cr>
@@ -119,6 +146,10 @@ nnoremap q: :q
 " and of accidentally putting capital letters for commands...
 command! Q q
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Backups/Undo/Timing Options
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set updatetime=250  " default of 4000 doesn't autosave as much
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Filetype specific options
@@ -133,4 +164,3 @@ au filetype python set colorcolumn=88
 au filetype python set expandtab
 au filetype python set autoindent
 au filetype python set fileformat=unix
-
