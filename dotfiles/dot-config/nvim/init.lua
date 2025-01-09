@@ -4,6 +4,10 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+local function _bazel_workspace_root(path)
+  return vim.fs.root(path, '.bazelversion')
+end
+
 local function _close_window_matching(pattern)
   local window_was_closed = false
   for _, wnr in ipairs(vim.api.nvim_list_wins()) do
@@ -395,6 +399,7 @@ require('lazy').setup({
         { '<leader>o', group = '[o]pen' },
         { '<leader>r', group = '[r]ename' },
         { '<leader>s', group = '[s]earch' },
+        { '<leader>sp', group = '[s]earch [p]lugins' },
         { '<leader>t', group = '[t]oggle' },
         { '<leader>tt', group = '[t]oggle [t]reesitter' },
         -- Maybe re-instate once I start using build-related commands?
@@ -460,11 +465,9 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          path_display = { 'absolute', 'smart' },
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -636,13 +639,49 @@ require('lazy').setup({
         -- ts_ls = {},
         --
         --
-        -- pyright = {
-        --   settings = {
-        --     python = {
-        --       pythonPath = vim.fn.exepath 'python',
-        --     },
-        --   },
-        -- },
+        pyright = {
+          cmd = { 'pyright-langserver', '--stdio' }, -- Same as default, copied here for reference.
+          root_dir = function(filename, bufnr)
+            local bazel_root = _bazel_workspace_root(filename)
+            if bazel_root ~= nil then
+              return bazel_root
+            end
+            local python_root = vim.fs.root(filename, { 'pyproject.toml', 'setup.py' })
+            if python_root ~= nil then
+              return python_root
+            end
+            local cwd = vim.fn.getcwd()
+            bazel_root = _bazel_workspace_root(cwd)
+            if bazel_root ~= nil then
+              return bazel_root
+            end
+            return nil
+          end,
+          on_new_config = function(new_config, new_root_dir)
+            local python_path = nil
+            local bazel_python_bin = vim.fs.joinpath(new_root_dir, '.pyright_python_executable')
+            if vim.fn.filereadable(bazel_python_bin) then
+              python_path = bazel_python_bin
+            end
+            if python_path == nil then
+              python_path = vim.fn.exepath 'python'
+            end
+            if python_path == nil then
+              vim.notify(
+                "Unable to find Python on Neovim's exepath or a .pyright_python_executable file, Pyright will default to its built-in Python executable!",
+                vim.log.levels.WARN
+              )
+            else
+              new_config.cmd[#new_config.cmd + 1] = '--pythonpath'
+              new_config.cmd[#new_config.cmd + 1] = python_path
+            end
+          end,
+          settings = {
+            -- python = {
+            --   pythonPath = vim.fn.exepath 'python',
+            -- },
+          },
+        },
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
