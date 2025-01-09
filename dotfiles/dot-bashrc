@@ -67,3 +67,7 @@ unset __conda_setup
 if [ -f "${HOME}/.set_path" ]; then
     . "${HOME}/.set_path"
 fi
+
+if [[ "${TERM_PROGRAM}" == "ghostty" ]]; then
+    export TERM=xterm-256color
+fi
