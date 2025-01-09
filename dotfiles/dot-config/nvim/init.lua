@@ -502,7 +502,7 @@ require('lazy').setup({
         require('telescope.builtin').live_grep {
           search_dirs = { vim.fs.joinpath(data_dir, 'lazy') },
         }
-      end, { desc = '[S]each [P]lugin [G]iles' })
+      end, { desc = '[S]each [P]lugin [G]rep' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
