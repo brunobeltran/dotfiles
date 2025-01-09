@@ -209,6 +209,7 @@ vim.filetype.add {
     ['.set_path'] = 'sh',
     ['dot-bash_completion'] = 'sh',
     ['.bash_completion'] = 'sh',
+    ['.sqlfluff'] = 'dosini',
   },
 }
 
@@ -319,6 +320,10 @@ require('lazy').setup({
     opts = {
       indent = {
         char = '▏',
+      },
+      scope = {
+        show_start = false,
+        show_end = false,
       },
     },
   },
@@ -484,6 +489,20 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader>sb', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>spf', function()
+        -- stdpath returns a single string for 'data', list for 'data_dir'.
+        local data_dir = vim.fn.stdpath 'data' --[[@as string]]
+        require('telescope.builtin').find_files {
+          cwd = vim.fs.joinpath(data_dir, 'lazy'),
+        }
+      end, { desc = '[S]each [P]lugin [F]iles' })
+      vim.keymap.set('n', '<leader>spg', function()
+        -- stdpath returns a single string for 'data', list for 'data_dir'.
+        local data_dir = vim.fn.stdpath 'data' --[[@as string]]
+        require('telescope.builtin').live_grep {
+          search_dirs = { vim.fs.joinpath(data_dir, 'lazy') },
+        }
+      end, { desc = '[S]each [P]lugin [G]iles' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -541,31 +560,6 @@ require('lazy').setup({
       'hrsh7th/cmp-nvim-lsp',
     },
     config = function()
-      -- Brief aside: **What is LSP?**
-      --
-      -- LSP is an initialism you've probably heard, but might not understand what it is.
-      --
-      -- LSP stands for Language Server Protocol. It's a protocol that helps editors
-      -- and language tooling communicate in a standardized fashion.
-      --
-      -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc.). These Language Servers
-      -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
-      -- processes that communicate with some "client" - in this case, Neovim!
-      --
-      -- LSP provides Neovim with features like:
-      --  - Go to definition
-      --  - Find references
-      --  - Autocompletion
-      --  - Symbol Search
-      --  - and more!
-      --
-      -- Thus, Language Servers are external tools that must be installed separately from
-      -- Neovim. This is where `mason` and related plugins come into play.
-      --
-      -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
-      -- and elegantly composed help section, `:help lsp-vs-treesitter`
-
       --  This function gets run when an LSP attaches to a particular buffer.
       --    That is to say, every time a new file is opened that is associated with
       --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
@@ -582,77 +576,19 @@ require('lazy').setup({
             mode = mode or 'n'
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
-
-          -- Jump to the definition of the word under your cursor.
-          --  This is where a variable was first declared, or where a function is defined, etc.
-          --  To jump back, press <C-t>.
           map('<leader>gd', require('telescope.builtin').lsp_definitions, '[G]oto [d]efinition')
-
-          -- WARN: This is not Goto Definition, this is Goto Declaration.
-          --  For example, in C this would take you to the header.
           map('<leader>gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
-
-          -- Find references for the word under your cursor.
           map('<leader>gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
-
-          -- Jump to the implementation of the word under your cursor.
-          --  Useful when your language has ways of declaring types without an actual implementation.
           map('<leader>gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
-
-          -- Jump to the type of the word under your cursor.
-          --  Useful when you're not sure what type a variable is and you want to see
-          --  the definition of its *type*, not where it was *defined*.
           map('<leader>gT', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
-
-          -- Fuzzy find all the symbols in your current document.
-          --  Symbols are things like variables, functions, types, etc.
           map('<leader>ss', require('telescope.builtin').lsp_document_symbols, '[S]earch LSP [S]ymbols')
-
-          -- Fuzzy find all the symbols in your current workspace.
-          --  Similar to document symbols, except searches over your entire project.
           map('<leader>sw', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[S]earch [W]orkspace')
-
-          -- Rename the variable under your cursor.
-          --  Most Language Servers support renaming across files, etc.
           map('<leader>ri', vim.lsp.buf.rename, '[R]ename [I]dentifier')
-
-          -- Execute a code action, usually your cursor needs to be on top of an error
-          -- or a suggestion from your LSP for this to activate.
           map('<leader>fx', vim.lsp.buf.code_action, '[F]i[x]/Code Action', { 'n', 'x' })
 
-          -- The following two autocommands are used to highlight references of the
-          -- word under your cursor when your cursor rests there for a little while.
-          --    See `:help CursorHold` for information about when this is executed
-          --
-          -- When you move your cursor, the highlights will be cleared (the second autocommand).
+          -- Make inlay hints (e.g., visually make `f(5)` into `f(x=5)`)
+          -- toggle-able. We usually don't want them,
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          -- if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
-          --   local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-          --   vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-          --     buffer = event.buf,
-          --     group = highlight_augroup,
-          --     callback = vim.lsp.buf.document_highlight,
-          --   })
-          --
-          --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-          --     buffer = event.buf,
-          --     group = highlight_augroup,
-          --     callback = vim.lsp.buf.clear_references,
-          --   })
-          --
-          --   vim.api.nvim_create_autocmd('LspDetach', {
-          --     group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-          --     callback = function(event2)
-          --       vim.lsp.buf.clear_references()
-          --       vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-          --     end,
-          --   })
-          -- end
-
-          -- The following code creates a keymap to toggle inlay hints in your
-          -- code, if the language server you are using supports them
-          --
-          -- This may be unwanted, since they displace some of your code
           if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
@@ -690,7 +626,6 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -700,7 +635,14 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
-
+        --
+        -- pyright = {
+        --   settings = {
+        --     python = {
+        --       pythonPath = vim.fn.exepath 'python',
+        --     },
+        --   },
+        -- },
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -750,6 +692,10 @@ require('lazy').setup({
 
   { -- Autoformat
     'stevearc/conform.nvim',
+    dependencies = {
+      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      'WhoIsSethDaniel/mason-tool-installer.nvim',
+    },
     event = { 'BufWritePre' },
     cmd = { 'ConformInfo' },
     keys = {
@@ -762,33 +708,54 @@ require('lazy').setup({
         desc = '[F]ormat buffer',
       },
     },
-    opts = {
-      notify_on_error = false,
-      format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        local lsp_format_opt
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          lsp_format_opt = 'never'
-        else
-          lsp_format_opt = 'fallback'
-        end
-        return {
-          timeout_ms = 500,
-          lsp_format = lsp_format_opt,
-        }
-      end,
-      formatters_by_ft = {
+    config = function()
+      local formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         python = { 'isort', 'black', 'ruff' },
+        sql = { 'sqlfluff' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
-      },
-    },
+      }
+      local ensure_installed = {}
+      for _, formatters in pairs(formatters_by_ft) do
+        for _, formatter in ipairs(formatters) do
+          table.insert(ensure_installed, formatter)
+        end
+      end
+      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      require('conform').setup {
+        notify_on_error = true,
+        format_on_save = function(bufnr)
+          -- Disable "format_on_save lsp_fallback" for languages that don't
+          -- have a well standardized coding style. You can add additional
+          -- languages here or re-enable it for the disabled ones.
+          local disable_filetypes = { c = true, cpp = true, python = true }
+          local lsp_format_opt
+          if disable_filetypes[vim.bo[bufnr].filetype] then
+            lsp_format_opt = 'never'
+          else
+            lsp_format_opt = 'fallback'
+          end
+          return {
+            timeout_ms = 500,
+            lsp_format = lsp_format_opt,
+          }
+        end,
+        formatters_by_ft = formatters_by_ft,
+        log_level = vim.log.levels.INFO,
+        -- Don't need SQLfluff config because I switched to using per-project
+        -- files.
+        -- formatters = {
+        --   sqlfluff = {
+        --     -- Can't use `prepend_args` since default is `fix -`, and --dialect
+        --     -- has to come _after_ the `fix`.
+        --     args = { 'fix', '--dialect', 'duckdb', '-' },
+        --   },
+        -- },
+      }
+    end,
   },
 
   { -- Autocompletion
@@ -907,6 +874,51 @@ require('lazy').setup({
     end,
   },
 
+  { -- Linting
+    'mfussenegger/nvim-lint',
+    event = { 'BufReadPre', 'BufNewFile' },
+    dependencies = {
+      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+      'WhoIsSethDaniel/mason-tool-installer.nvim',
+    },
+    config = function()
+      local lint = require 'lint'
+      lint.linters_by_ft = {
+        dockerfile = { 'hadolint' },
+        markdown = { 'vale' },
+        -- Not needed since redundant relative to the LSP.
+        -- python = { 'ruff' },
+        rst = { 'vale' },
+        sql = { 'sqlfluff' },
+        text = { 'vale' },
+        -- Not needed since we have `terraformls`.
+        -- terraform = { 'tflint' },
+      }
+      local ensure_installed = {}
+      for _, linters in pairs(lint.linters_by_ft) do
+        for _, linter in ipairs(linters) do
+          table.insert(ensure_installed, linter)
+        end
+      end
+      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+
+      -- Create autocommand which carries out the actual linting
+      -- on the specified events.
+      local lint_augroup = vim.api.nvim_create_augroup('lint', { clear = true })
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
+        group = lint_augroup,
+        callback = function()
+          -- Only run the linter in buffers that you can modify in order to
+          -- avoid superfluous noise, notably within the handy LSP pop-ups that
+          -- describe the hovered symbol using Markdown.
+          if vim.opt_local.modifiable:get() then
+            lint.try_lint()
+          end
+        end,
+      })
+    end,
+  },
+
   { -- You can easily change to a different colorscheme.
     -- Change the name of the colorscheme plugin below, and then
     -- change the command in the config to whatever the name of that colorscheme is.
@@ -1016,9 +1028,40 @@ require('lazy').setup({
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
+  { -- Debugging
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      'rcarriga/nvim-dap-ui',
+      'theHamsta/nvim-dap-virtual-text',
+      'nvim-neotest/nvim-nio',
+      'williamboman/mason.nvim',
+    },
+    config = function()
+      dap = require 'dap'
+      local ui = require 'dapui'
+      ui.setup()
+      require('nvim-dap-virtual-text').setup()
+
+      vim.keymap.set('n', '<leader>d?', function()
+        ui.eval(nil, { enter = true })
+      end, { desc = '[D]ebug [?] value under cursor' })
+
+      dap.listeners.before.attach.dapui_config = function()
+        ui.open()
+      end
+      dap.listeners.before.launch.dapui_config = function()
+        ui.open()
+      end
+      dap.listeners.before.event_terminated.dapui_config = function()
+        ui.open()
+      end
+      dap.listeners.before.event_exited.dapui_config = function()
+        ui.open()
+      end
+    end,
+  },
   --
   -- TODO: Incorporate equivalents to kickstart's debug/lint configs.
-  -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.lint',
 }, {
   ui = {

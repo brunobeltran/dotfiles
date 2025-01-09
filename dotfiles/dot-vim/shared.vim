@@ -71,7 +71,8 @@ set signcolumn=yes
 set mouse=a
 
 " Highlight full line that cursor is on, regardless of which window is active.
-set cursorline
+" set cursorline
+" This was nice, but I disabled it because the color was too similar to pane dividers.
 
 " Minimal number of screen lines to keep above and below the cursor.
 set scrolloff=10
