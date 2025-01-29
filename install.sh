@@ -6,6 +6,7 @@ set -euxo pipefail
 # Global constants.
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BUILD_DIR="${SCRIPT_DIR}/build"
+mkdir -p "${BUILD_DIR}"
 
 ##
 # Determine all configuration that is OS- or architecture-dependent.
@@ -36,7 +37,7 @@ fi
 ##
 # Setup miniconda.
 if ! which conda >/dev/null 2>&1; then
-	wget -O miniconda.sh "${BUILD_DIR}/${miniconda_download_link}"
+	wget -O "${BUILD_DIR}/miniconda.sh" "${miniconda_download_link}"
 	bash "${BUILD_DIR}/miniconda.sh"
 	rm "${BUILD_DIR}/miniconda.sh"
 fi
