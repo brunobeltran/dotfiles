@@ -32,7 +32,16 @@ au FileType tex set makeprg=pdflatex\ %:r\ &&\ bibtex\ %:r\ &&\ pdflatex\ %:r\ &
 "autocmd BufWinEnter *.py setlocal foldexpr=SimpylFold(v:lnum) foldmethod=expr
 "autocmd BufWinLeave *.py setlocal foldexpr< foldmethod<
 
-" }}}
+"}}}
+
+"{{{ => C++ specific
+augroup cpp_settings
+    autocmd!
+    autocmd FileType cpp setlocal shiftwidth=2 tabstop=2 expandtab softtabstop=2 smarttab
+    autocmd FileType cpp setlocal cinoptions=:0,l1,t0 textwidth=100 colorcolumn=+1
+    autocmd FileType cpp setlocal formatoptions=croql comments=://,s1:/*,mb:*,ex:*/
+augroup END
+"}}}
 
 "{{{ => Web specific
 "

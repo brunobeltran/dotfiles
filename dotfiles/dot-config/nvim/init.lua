@@ -696,6 +696,7 @@ require('lazy').setup({
             },
           },
         },
+        starpls = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -749,6 +750,7 @@ require('lazy').setup({
     },
     config = function()
       local formatters_by_ft = {
+        cpp = { 'clang_format' },
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         python = { 'isort', 'black', 'ruff' },
