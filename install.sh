@@ -37,9 +37,11 @@ fi
 ##
 # Setup miniconda.
 if ! which conda >/dev/null 2>&1; then
-	wget -O "${BUILD_DIR}/miniconda.sh" "${miniconda_download_link}"
-	bash "${BUILD_DIR}/miniconda.sh"
-	rm "${BUILD_DIR}/miniconda.sh"
+	if [[ ! -d "${HOME}/.miniconda" ]] ; then 
+		wget -O "${BUILD_DIR}/miniconda.sh" "${miniconda_download_link}"
+		bash "${BUILD_DIR}/miniconda.sh"
+		rm "${BUILD_DIR}/miniconda.sh"
+	fi
 fi
 
 ##
