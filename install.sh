@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -euxo pipefail
+shopt -s nullglob
 
 ##
 # Global constants.
@@ -84,6 +85,32 @@ fi
 echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
+# Manually "adopt" all folder-level config.
+# 
+# Otherwise we get an error like
+# ```
+# stow: ERROR: stow_contents() called with non-directory path: developer/bruno-dotfiles/dotfiles/.vim
+# ```
+#
+# https://github.com/aspiers/stow/issues/19
+for folder in dotfiles/*; do 
+	[[ -d "${folder}" ]] || continue;
+	real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
+	eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
+	if [[ -L "${eventual_link_location}" ]]; then
+		rm "${eventual_link_location}"
+		continue
+	fi
+	if [[ -d "${eventual_link_location}" ]]; then 
+		cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
+		rm -rf "${folder}"
+		cp -r "${eventual_link_location}.bak" "${folder}"
+		rm -rf "${eventual_link_location}"
+		ln -s "${real_folder_path}" "${eventual_link_location}"
+	fi
+done
+
+##
 # Actually install all "dotfiles".
 stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
 
@@ -91,6 +118,7 @@ stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
 # Build and install our fonts directory.
 FONTS_DIR="${BUILD_DIR}/fonts"
 mkdir -p "${FONTS_DIR}"
+mkdir -p "${fonts_install_dir}"
 if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
 	wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
 	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
