@@ -45,14 +45,10 @@ if [[ "$_should_alias_python_to_python3" = true ]]; then
 fi
 unset _should_alias_python_to_python3
 
-WORKTREE_ROOT="${HOME}/developer/dbSDK"
+WORKTREE_ROOT="${HOME}/forest"
 # When we create a new worktree, we immediately kick off a minimal target that
-# triggers the most expensive repository rules (python and ruff).
+# triggers the most expensive repository rules.
 INITIAL_TARGET="//tools:workspace_test"
-if [[ ! -d "${WORKTREE_ROOT}" ]]; then
-    # Try one alternative directory just in case.
-    WORKTREE_ROOT="${HOME}/dbSDK"
-fi
 
 # Convenience no-op function for when we want to print a message only in bash
 # debug---i.e., `set -x`--- mode. Basically a more semantically-reasonable way
@@ -79,7 +75,7 @@ dsync_from() {
     rsync -avvP --no-times --no-perms "server-${server_number}.pleasant.digit.bio:${server_path}" "${local_path}"
 }
 
-# Instantiate Git worktree aliases for Digital Biology only if the WORKTREE_ROOT
+# Instantiate Git worktree aliases for Forest only if the WORKTREE_ROOT
 # exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
     gtw() {
