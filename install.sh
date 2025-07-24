@@ -65,6 +65,10 @@ if ! which starship >/dev/null 2>&1; then
 fi
 
 ##
+# Install TPM, the Tmux Plugin Manager
+git clone https://github.com/tmux-plugins/tpm dotfiles/dot-tmux/plugins/tpm
+
+##
 # Build NeoVim from source.
 NEOVIM_SOURCE_DIR="${BUILD_DIR}/neovim-src"
 NEOVIM_BUILD_DIR="${BUILD_DIR}/neovim-build"
