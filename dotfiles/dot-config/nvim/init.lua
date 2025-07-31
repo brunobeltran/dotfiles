@@ -786,15 +786,19 @@ require('lazy').setup({
         end,
         formatters_by_ft = formatters_by_ft,
         log_level = vim.log.levels.INFO,
-        -- Don't need SQLfluff config because I switched to using per-project
-        -- files.
-        -- formatters = {
-        --   sqlfluff = {
-        --     -- Can't use `prepend_args` since default is `fix -`, and --dialect
-        --     -- has to come _after_ the `fix`.
-        --     args = { 'fix', '--dialect', 'duckdb', '-' },
-        --   },
-        -- },
+        formatters = {
+          black = {
+            prepend_args = { '--fast' },
+          },
+          buildifier = {},
+          --   -- Don't need SQLfluff config because I switched to using per-project
+          --   -- files.
+          --   sqlfluff = {
+          --     -- Can't use `prepend_args` since default is `fix -`, and --dialect
+          --     -- has to come _after_ the `fix`.
+          --     args = { 'fix', '--dialect', 'duckdb', '-' },
+          --   },
+        },
       }
     end,
   },
