@@ -12,6 +12,10 @@ alias bazel=bazelisk
 # for a beep
 alias beep='play -qn synth 1 sine 800 vol 1 '
 
+if [[ -f "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV" ]]; then
+    alias fury_init='export UV_INDEX_FOREST_USERNAME=$(cat "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV")'
+fi
+
 # Use the mac names for our copy buffer commands. wl-copy is a Wayland
 # replacement for xclip (requires the wl-clipboard package).
 if [[ -z "$(which pbcopy)" ]]; then
@@ -46,6 +50,9 @@ fi
 unset _should_alias_python_to_python3
 
 WORKTREE_ROOT="${HOME}/forest"
+ORIGIN_REMOTE_NAME="origin"   # Where you create branches.
+UPSTREAM_REMOTE_NAME="origin" # Where 'main' lives.
+MAIN_BRANCH_NAME="main"
 # When we create a new worktree, we immediately kick off a minimal target that
 # triggers the most expensive repository rules.
 INITIAL_TARGET="//tools:workspace_test"
@@ -60,19 +67,38 @@ _INFO() {
     }
 }
 
-dsync_to() {
-    server_number=$1
-    server_path=$2
-    shift
-    shift
-    rsync -avvP --no-times --no-perms "$@" "server-${server_number}.pleasant.digit.bio:${server_path}"
+# Convenience function to check if a branch has an already-merged PR.
+branch_merged_upstream_time() {
+    local upstream_base="$1" # usually `main` or `master`.
+    local branch_name="$2"
+    local pr_info=$(gh pr list \
+        --state all \
+        --head "${branch_name}" \
+        --base "${upstream_base}" \
+        --json number,state,title,mergedAt \
+        --limit 1)
+    if [[ $(echo "$pr_info" | jq 'length') -eq 0 ]]; then
+        echo "❌ No PR found from branch '${branch_name}' into branch '${upstream_base}'." >&2
+        return 1
+    fi
+    if [[ $(echo "$pr_info" | jq -r '.[0].state') != MERGED ]]; then
+        local pr_number=$(echo "$pr_info" | jq -r '.[0].number')
+        local pr_title=$(echo "$pr_info" | jq -r '.[0].title')
+        echo "🟡 Found un-merged PR #${pr_number} ('${pr_title}')." >&2
+        return 2
+    fi
+    # Switch to just `-d` if using coreutils.
+    local github_date_string="$(echo "$pr_info" | jq -r '.[0].mergedAt')"
+    date -j -f "%Y-%m-%dT%H:%M:%S%z" "${github_date_string/Z/+0000}" +%s
+    return 0
 }
 
-dsync_from() {
-    server_number=$1
-    server_path=$2
-    local_path=$3
-    rsync -avvP --no-times --no-perms "server-${server_number}.pleasant.digit.bio:${server_path}" "${local_path}"
+# Convenience function to print a branch's most recent commit in seconds since
+# epoch.
+most_recent_commit_time() {
+    local latest_commit_time_string="$(git log -1 --format=%cI "$1")"
+    local bsd_friendly_time="${latest_commit_time_string:0:22}${latest_commit_time_string:23:2}"
+    date -j -f "%Y-%m-%dT%H:%M:%S%z" "${bsd_friendly_time}" +%s
 }
 
 # Instantiate Git worktree aliases for Forest only if the WORKTREE_ROOT
@@ -88,9 +114,9 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
     # commands when updating this function!
     _hgd() { echo "$(
         worktree_path="${WORKTREE_ROOT}/$1"
-        main_path="${WORKTREE_ROOT}/main"
+        main_path="${WORKTREE_ROOT}/${MAIN_BRANCH_NAME}"
         requested_ref="refs/heads/$1"
-        main_ref="refs/heads/main"
+        main_ref="refs/heads/${MAIN_BRANCH_NAME}"
         set -euox pipefail
         if [[ -d "${worktree_path}" ]]; then
             _INFO "Worktree exists, taking you there!" &&
@@ -98,27 +124,27 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
                 pwd
             exit $?
         fi
-        _INFO "Fetching 'origin' to ensure we know if the branch exists!"
-        git fetch origin >/dev/null
+        _INFO "Fetching '${ORIGIN_REMOTE_NAME}' to ensure we know if the branch exists!"
+        git fetch ${ORIGIN_REMOTE_NAME} >/dev/null
         if git show-ref --verify --quiet "${requested_ref}"; then
             _INFO "Checking out existing branch...$1" &&
                 git worktree add "${worktree_path}" "$1" >/dev/null
         else
             if ! git show-ref --verify --quiet "${main_ref}"; then
-                _INFO "There does not seem to be a 'main' branch...please make one!"
+                _INFO "There does not seem to be a '${MAIN_BRANCH_NAME}' branch...please make one!"
                 exit 1
             fi
             if [[ ! -d "${main_path}" ]]; then
-                _INFO "There does not appear to be a worktree for the main branch...please make one!"
+                _INFO "There does not appear to be a worktree for the ${MAIN_BRANCH_NAME} branch...please make one!"
                 exit 2
             fi
             _INFO "Pulling upstream changes to main before creating new branch!"
-            if ! { cd "${main_path}" && git pull upstream main >/dev/null; }; then
-                _INFO "Failed to pull upstream changes to main, please update 'main' then re-run 'hgd'!"
+            if ! { cd "${main_path}" && git pull ${UPSTREAM_REMOTE_NAME} ${MAIN_BRANCH_NAME} >/dev/null; }; then
+                _INFO "Failed to pull upstream changes to ${MAIN_BRANCH_NAME}, please update '${MAIN_BRANCH_NAME}' then re-run 'hgd'!"
                 exit 3
             fi
-            _INFO "Creating new worktree on fresh branch based on 'main'!"
-            if ! git worktree add "${worktree_path}" main -b "$1" >/dev/null; then
+            _INFO "Creating new worktree on fresh branch based on '${MAIN_BRANCH_NAME}'!"
+            if ! git worktree add "${worktree_path}" ${MAIN_BRANCH_NAME} -b "$1" >/dev/null; then
                 _INFO "Failed to create worktree!"
                 exit 4
             fi
@@ -144,53 +170,44 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         return "${subshell_exit_code}"
     }
 
-    _exists_pr() {
-        [[ "$#" -eq 2 ]] || return 255
-        gh pr list --search "is:pr $2 head:$1" --json headRefName |
-            python -c 'import sys, json; [print(o["headRefName"]) for o in json.load(sys.stdin)]' |
-            grep -q "^$1$"
-        return $?
-    }
-    hgdelete() {
-        local worktree_path
-        worktree_path="${WORKTREE_ROOT}/$1"
-        if [[ "$2" != "-f" ]]; then
-            local failed=false
-            if _exists_pr "$1" "is:open"; then
-                failed=true
-                echo "ERROR: Found open PR with 'gh pr list --search \"is:pr is:open head:$1\"'"
-            fi
-            if ! _exists_pr "$1" "is:closed"; then
-                failed=true
-                echo "ERROR: Closed PR not found with 'gh pr list --search \"is:pr is:closed head:$1\"'"
-            fi
-            if [[ "$failed" = true ]]; then
-                echo "Pass \"-f\" flag to ignore this and still attempt removal."
-                echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!"
-                return 1
-            fi
+    _hgdelete() {
+        local branch_name="$1"
+        local worktree_path="${WORKTREE_ROOT}/${branch_name}"
+        set -euxo pipefail
+        local merge_time="$(branch_merged_upstream_time "${MAIN_BRANCH_NAME}" "${branch_name}")"
+        if [[ -z "${merge_time}" && "$2" != "-f" ]]; then
+            echo "Pass \"-f\" flag to ignore this and still attempt removal." >&2
+            echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!" >&2
+            return 1
         fi
         if [[ -d "${worktree_path}" ]]; then
             echo -n "Attempting to remove git worktree at ${worktree_path}..."
-            if ! git worktree remove "$2" "${worktree_path}"; then
-                echo "FAILED. Pass '-f' to force."
+            if ! git worktree remove "${worktree_path}"; then
+                echo "FAILED. Pass '-f' to force." >&2
                 return 2
             else
                 echo "Success!"
             fi
         fi
-        [[ "$2" == "-f" ]] && d_flag="-D" || d_flag="-d"
-        echo -n "Attempting to force-delete local branch with 'git branch $d_flag $1'..."
-        if ! git branch "$d_flag" "$1"; then
-            echo "FAILED. Pass '-f' to upgrade to use 'git branch -D'."
+        local local_commit_time="$(most_recent_commit_time "${branch_name}")"
+        if (($merge_time < $local_commit_time)); then
+            echo "FAILED. Local commits after merge. Leaving ${branch_name} intact." >&2
+            return 3
+        fi
+        echo -n "Attempting to remove branch '${branch_name}'..."
+        if ! git branch -D "$1"; then
+            echo "FAILED."
             return 3
         else
             echo "Success!"
         fi
-        echo -n "Attempting to delete corresponding upstream branch: origin/$1..."
-        if ! git push -d origin "$1"; then
-            return 4
-        fi
         echo "Successfully scrubbed all references to $1"
+    }
+    hgdelete() {
+        # Subshell to allow us to `set -euxo`...etc locally.
+        (
+            _hgdelete "$@"
+        )
+        return $?
     }
 fi

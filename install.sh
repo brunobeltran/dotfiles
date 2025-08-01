@@ -15,7 +15,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 	fi
-	brew install bash stow ghostty wget
+	brew install bash stow kitty wget jq gh git tmux htop rsync
 	miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 	fonts_install_dir="${HOME}/Library/Fonts"
 
@@ -38,7 +38,7 @@ fi
 ##
 # Setup miniconda.
 if ! which conda >/dev/null 2>&1; then
-	if [[ ! -d "${HOME}/.miniconda" ]] ; then 
+	if [[ ! -d "${HOME}/.miniconda" ]]; then
 		wget -O "${BUILD_DIR}/miniconda.sh" "${miniconda_download_link}"
 		bash "${BUILD_DIR}/miniconda.sh"
 		rm "${BUILD_DIR}/miniconda.sh"
@@ -90,22 +90,22 @@ echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
 # Manually "adopt" all folder-level config.
-# 
+#
 # Otherwise we get an error like
 # ```
 # stow: ERROR: stow_contents() called with non-directory path: developer/bruno-dotfiles/dotfiles/.vim
 # ```
 #
 # https://github.com/aspiers/stow/issues/19
-for folder in dotfiles/*; do 
-	[[ -d "${folder}" ]] || continue;
+for folder in dotfiles/*; do
+	[[ -d "${folder}" ]] || continue
 	real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
 	eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
 	if [[ -L "${eventual_link_location}" ]]; then
 		rm "${eventual_link_location}"
 		continue
 	fi
-	if [[ -d "${eventual_link_location}" ]]; then 
+	if [[ -d "${eventual_link_location}" ]]; then
 		cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
 		rm -rf "${folder}"
 		cp -r "${eventual_link_location}.bak" "${folder}"
