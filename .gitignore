@@ -6,8 +6,24 @@ dotfiles/dot-vim/plugged
 dotfiles/dot-vim/.netrwhist
 dotfiles/dot-vim/temp_dirs
 dotfiles/dot-tmux/plugins
-dotfiles/dot-config/kitty/kitty.conf.bak
+dotfiles/dot-config/Code
+dotfiles/dot-config/*.list
+dotfiles/dot-config/caja/
+dotfiles/dot-config/cinnamon*
+dotfiles/dot-config/dconf/
+dotfiles/dot-config/evolution/
+dotfiles/dot-config/google-chrome
+dotfiles/dot-config/gtk-3.0/
 dotfiles/dot-config/htop
+dotfiles/dot-config/ibus/
+dotfiles/dot-config/kitty/kitty.conf.bak
+dotfiles/dot-config/menus/
+dotfiles/dot-config/nemo/
+dotfiles/dot-config/pulse/
+dotfiles/dot-config/sublime-text/
+dotfiles/dot-config/user-dirs.dirs
+dotfiles/dot-config/user-dirs.locale
+
 
 # Created by the FZF installer, so we let them just exist out-of-band.
 dotfiles/dot-config/fish/
