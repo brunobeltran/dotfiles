@@ -2,7 +2,7 @@
     editor = vim
     fileMode = false
 [user]
-    email = bruno@digit.bio
+    email = brunobeltran0@gmail.com
     name = Bruno Beltran
 [branch]
     autosetuprebase = always

@@ -66,7 +66,9 @@ fi
 
 ##
 # Install TPM, the Tmux Plugin Manager
-git clone https://github.com/tmux-plugins/tpm dotfiles/dot-tmux/plugins/tpm
+if [[ ! -d dotfiles/dot-tmux/plugins/tpm ]]; then
+	git clone https://github.com/tmux-plugins/tpm dotfiles/dot-tmux/plugins/tpm
+fi
 
 ##
 # Build NeoVim from source.

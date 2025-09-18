@@ -753,8 +753,9 @@ require('lazy').setup({
         cpp = { 'clang_format' },
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        python = { 'isort', 'black', 'ruff' },
+        python = { 'isort', 'ruff' },
         sql = { 'sqlfluff' },
+        markdown = { 'mdformat' },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
@@ -785,10 +786,16 @@ require('lazy').setup({
           }
         end,
         formatters_by_ft = formatters_by_ft,
-        log_level = vim.log.levels.INFO,
+        log_level = vim.log.levels.DEBUG,
         formatters = {
-          black = {
-            prepend_args = { '--fast' },
+          ruff = {
+            -- Omit the {"--stdin-filename", "$FILENAME"} bit that comes defualt
+            -- with Conform, since if I'm _in_ a file, I do want to auto-format
+            -- it, regardless of whether my pyproject.toml says otherwise. In
+            -- particualr, `$FILENAME` will pass the full path, not the
+            -- git-related path, which can sometimes make black ignore patterns
+            -- break in weird ways.
+            args = { 'format', '--stdin-filename', '$FILENAME', '-' },
           },
           buildifier = {},
           --   -- Don't need SQLfluff config because I switched to using per-project

@@ -14,6 +14,8 @@ alias beep='play -qn synth 1 sine 800 vol 1 '
 
 if [[ -f "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV" ]]; then
     alias fury_init='export UV_INDEX_FOREST_USERNAME=$(cat "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV")'
+else
+    alias fury_init='echo PLEASE INSTALL A GEMFURY DEPLOY KEY'
 fi
 
 # Use the mac names for our copy buffer commands. wl-copy is a Wayland
