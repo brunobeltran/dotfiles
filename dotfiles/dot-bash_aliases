@@ -51,7 +51,7 @@ if [[ "$_should_alias_python_to_python3" = true ]]; then
 fi
 unset _should_alias_python_to_python3
 
-WORKTREE_ROOT="${HOME}/forest"
+WORKTREE_ROOT="${HOME}/mergelabs"
 ORIGIN_REMOTE_NAME="origin"   # Where you create branches.
 UPSTREAM_REMOTE_NAME="origin" # Where 'main' lives.
 MAIN_BRANCH_NAME="main"

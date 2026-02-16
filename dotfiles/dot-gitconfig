@@ -8,6 +8,8 @@
     autosetuprebase = always
 [difftool]
     prompt = false
+[merge]
+    conflictstyle = diff3
 [mergetool]
     prompt = false
 [pull]
@@ -15,4 +17,4 @@
 [diff]
     tool = nvimdiff
 [include]
-    path = /Users/bruno/forest/main/git/config
+    path = ~/mergelabs/main/mglab/git/config
