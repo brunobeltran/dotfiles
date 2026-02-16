@@ -68,6 +68,19 @@ if [ -f "${HOME}/.set_path" ]; then
     . "${HOME}/.set_path"
 fi
 
+# Automatically inserted stuff...
 if [[ "${TERM_PROGRAM}" == "ghostty" ]]; then
     export TERM=xterm-256color
 fi
+if [[ -z "${PYENV_ROOT}" ]] && [[ -d "${HOME}/.pyenv" ]]; then
+    export PYENV_ROOT="${HOME}/.pyenv"
+fi
+if command -v pyenv >/dev/null; then
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+fi
+
+# >>> b2 autocomplete >>>
+# This section is managed by b2 . Manual edit may break automated updates.
+source /Users/bruno/.bash_completion.d/b2
+# <<< b2 autocomplete <<<
