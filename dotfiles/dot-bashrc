@@ -85,6 +85,4 @@ fi
 source /Users/bruno/.bash_completion.d/b2
 # <<< b2 autocomplete <<<
 
-for completion_script in /Users/bruno/.local/share/merge_io/bash_completion.d/*; do
-    . "${completion_script}"
-done
+source "/Users/bruno/.local/share/merge_io/dev_niceties/init.sh"
