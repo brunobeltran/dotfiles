@@ -16,7 +16,6 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 	fi
 	brew install bash stow kitty wget jq gh git tmux htop rsync
-	miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
 	fonts_install_dir="${HOME}/Library/Fonts"
 
 	# Setup deps for neovim source build.
@@ -24,25 +23,10 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 elif [[ -f "/etc/debian_version" ]]; then
 	sudo apt update && sudo apt upgrade -y
 	sudo apt install git rsync tmux htop bash wget stow
-	if [[ $(uname -m) == "aarch64" ]]; then
-		miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
-	else
-		miniconda_download_link=https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-	fi
 	fonts_install_dir="${HOME}/.local/share/fonts"
 
 	# Setup deps for neovim source build.
 	sudo apt install ninja-build gettext cmake unzip curl build-essential
-fi
-
-##
-# Setup miniconda.
-if ! which conda >/dev/null 2>&1; then
-	if [[ ! -d "${HOME}/.miniconda" ]]; then
-		wget -O "${BUILD_DIR}/miniconda.sh" "${miniconda_download_link}"
-		bash "${BUILD_DIR}/miniconda.sh"
-		rm "${BUILD_DIR}/miniconda.sh"
-	fi
 fi
 
 ##

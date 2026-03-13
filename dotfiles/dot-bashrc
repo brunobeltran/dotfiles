@@ -43,21 +43,6 @@ PS1='[\u@\h \W]\n\$ '
 # Use the "starship" prompt if we have it.
 [[ -n $(which starship) ]] && eval "$(starship init bash)"
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$("${HOME}/.miniconda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "${HOME}/.miniconda/etc/profile.d/conda.sh" ]; then
-        source "${HOME}/.miniconda/etc/profile.d/conda.sh"
-    else
-        export PATH="${HOME}/.miniconda/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
 [[ -f "${HOME}/.passwords" ]] && source "${HOME}/.passwords"
 [[ -f "${HOME}/.fzf.bash" ]] && source "${HOME}/.fzf.bash"
 [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -80,4 +65,4 @@ if command -v pyenv >/dev/null; then
     eval "$(pyenv virtualenv-init -)"
 fi
 
-source "/home/bruno/.local/share/merge_io/dev_niceties/init.sh"
+[[ -f "${HOME}/.local/share/merge_io/dev_niceties/init.sh" ]] && source "${HOME}/.local/share/merge_io/dev_niceties/init.sh"
