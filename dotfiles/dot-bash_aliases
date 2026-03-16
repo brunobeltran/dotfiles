@@ -20,9 +20,17 @@ fi
 
 # Use the mac names for our copy buffer commands. wl-copy is a Wayland
 # replacement for xclip (requires the wl-clipboard package).
-if [[ -z "$(which pbcopy)" ]]; then
-    alias pbcopy='wl-copy'
-    alias pbpaste='wl-paste'
+if ! command -v pbcopy >/dev/null 2>&1; then
+    if command -v wl-copy >/dev/null 2>&1; then
+        alias pbcopy='wl-copy'
+        alias pbpaste='wl-paste'
+    elif command -v xclip >/dev/null 2>&1; then
+        alias pbcopy='xclip -selection clipboard'
+        alias pbpaste='xclip -selection clipboard -o'
+    else
+        alias pbcopy='echo NO CLIPBOARD-RELATED COMMANDS INSTALLED. INSTALL xclip or wl-clipboard'
+        alias pbpaste='echo NO CLIPBOARD-RELATED COMMANDS INSTALLED. INSTALL xclip or wl-clipboard'
+    fi
 fi
 
 # nvim does not provide a dedicated executable for diff'ing
