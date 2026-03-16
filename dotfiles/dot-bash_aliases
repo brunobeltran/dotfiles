@@ -111,6 +111,76 @@ most_recent_commit_time() {
     date -j -f "%Y-%m-%dT%H:%M:%S%z" "${bsd_friendly_time}" +%s
 }
 
+# Bootstrap a new worktree-friendly directory structure from a remote repo.
+# Usage: hgcreate <remote> [worktree_root_parent]
+#   remote: git remote URL (e.g., git@github.com:org/repo.git)
+#   worktree_root_parent: where to create the repo folder (default: $HOME)
+#
+# Creates:
+#   ${worktree_root_parent}/${repo_name}/
+#   ${worktree_root_parent}/${repo_name}/${repo_name}.git  (bare clone)
+#   ${worktree_root_parent}/${repo_name}/.git              (gitdir file)
+#   ${worktree_root_parent}/${repo_name}/${default_branch}/ (first worktree)
+hgcreate() {
+    local remote="$1"
+    local worktree_root_parent="${2:-$HOME}"
+
+    if [[ $# -lt 1 || -z "${remote}" || "${remote}" != *.git ]]; then
+        echo "Usage: hgcreate <remote> [worktree_root_parent]" >&2
+        echo "  remote: git remote URL to clone (e.g., git@github.com:org/repo.git)" >&2
+        echo "  worktree_root_parent: parent directory for the worktree root (default: \$HOME)" >&2
+        return 1
+    fi
+
+    local repo_name
+    repo_name="$(basename "${remote}" .git)"
+
+    local worktree_root="${worktree_root_parent}/${repo_name}"
+    local bare_repo="${worktree_root}/${repo_name}.git"
+
+    if [[ -d "${worktree_root}" ]]; then
+        echo "Directory ${worktree_root} already exists." >&2
+        return 1
+    fi
+
+    mkdir -p "${worktree_root}"
+
+    echo "Cloning bare repo from ${remote}..."
+    if ! git clone --bare "${remote}" "${bare_repo}"; then
+        echo "Failed to clone ${remote}." >&2
+        rm -rf "${worktree_root}"
+        return 2
+    fi
+
+    # Bare clones store remote branches as local refs and use a fetch refspec
+    # of +refs/heads/*:refs/heads/*. Fix it so remote tracking branches appear
+    # under refs/remotes/origin/* like a normal clone, which hgd relies on.
+    git -C "${bare_repo}" config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+    git -C "${bare_repo}" fetch origin >/dev/null 2>&1
+
+    # Create .git file pointing to the bare repo so git commands work from
+    # the worktree root directory.
+    echo "gitdir: ./${repo_name}.git" > "${worktree_root}/.git"
+
+    # Detect default branch (main, master, etc.).
+    local default_branch
+    default_branch="$(git -C "${bare_repo}" symbolic-ref --short HEAD 2>/dev/null)"
+    if [[ -z "${default_branch}" ]]; then
+        echo "Could not detect default branch." >&2
+        return 3
+    fi
+
+    # Create the first worktree for the default branch.
+    echo "Creating worktree for '${default_branch}'..."
+    if ! git -C "${bare_repo}" worktree add "${worktree_root}/${default_branch}" "${default_branch}"; then
+        echo "Failed to create worktree for '${default_branch}'." >&2
+        return 4
+    fi
+
+    echo "Done! Worktree root: ${worktree_root}"
+    echo "Default branch worktree: ${worktree_root}/${default_branch}"
+}
+
 # Instantiate Git worktree aliases for Forest only if the WORKTREE_ROOT
 # exists.
 if [[ -d "${WORKTREE_ROOT}" ]]; then
