@@ -66,3 +66,4 @@ if command -v pyenv >/dev/null; then
 fi
 
 [[ -f "${HOME}/.local/share/merge_io/dev_niceties/init.sh" ]] && source "${HOME}/.local/share/merge_io/dev_niceties/init.sh"
+[[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"

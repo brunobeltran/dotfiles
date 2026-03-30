@@ -1,2 +1,4 @@
 # shellcheck source=/dev/null
 [[ -f ~/.bashrc ]] && . ~/.bashrc
+
+. "$HOME/.local/bin/env"

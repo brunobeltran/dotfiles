@@ -30,6 +30,12 @@ elif [[ -f "/etc/debian_version" ]]; then
 fi
 
 ##
+# Python via `uv`
+if ! which uv >/dev/null 2>&1; then
+	curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+##
 # Many distros come with ancient fzf, install from source.
 FZF_DIR="${BUILD_DIR}/fzf"
 if [[ ! -d "${FZF_DIR}" ]]; then

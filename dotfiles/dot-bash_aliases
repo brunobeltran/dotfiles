@@ -41,24 +41,6 @@ fi
 # makes all aliases accessible via sudo
 alias sudo='sudo '
 
-# Always give me a python that makes sense.
-_should_alias_python_to_python3=false
-if [[ -z "$(which python)" && -n "$(which python3)" ]]; then
-    _should_alias_python_to_python3=true
-fi
-if [[ -x "$(command -v lsb_release)" ]] && ! lsb_release -a | grep -q Debian; then
-    _should_alias_python_to_python3=true
-fi
-if [[ "$_should_alias_python_to_python3" = true ]]; then
-    if [[ -z "$(ls ~/.miniconda*)" ]]; then
-        alias python='python3'
-        if [[ -n "$(which pip3)" ]]; then
-            alias pip='pip3'
-        fi
-    fi
-fi
-unset _should_alias_python_to_python3
-
 WORKTREE_ROOT="${HOME}/mergelabs"
 ORIGIN_REMOTE_NAME="origin"   # Where you create branches.
 UPSTREAM_REMOTE_NAME="origin" # Where 'main' lives.
