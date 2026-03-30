@@ -47,7 +47,7 @@ UPSTREAM_REMOTE_NAME="origin" # Where 'main' lives.
 MAIN_BRANCH_NAME="main"
 # When we create a new worktree, we immediately kick off a minimal target that
 # triggers the most expensive repository rules.
-INITIAL_TARGET="//tools:workspace_test"
+INITIAL_TARGET="//forest/building:workspace_test"
 
 # Convenience no-op function for when we want to print a message only in bash
 # debug---i.e., `set -x`--- mode. Basically a more semantically-reasonable way
@@ -163,18 +163,25 @@ hgcreate() {
     echo "Default branch worktree: ${worktree_root}/${default_branch}"
 }
 
-# Instantiate Git worktree aliases for Forest only if the WORKTREE_ROOT
-# exists.
-if [[ -d "${WORKTREE_ROOT}" ]]; then
-    gtw() {
-        cd "${WORKTREE_ROOT}"
-        ls
-    }
-    # Implementation of `hgd`. Executes in a subshell in order to use `set`, and
-    # prints *only* the final directory that should be `cd`'d to to stdout on
-    # success---which means we must be careful to redirect the output of all
-    # commands when updating this function!
-    _hgd() { echo "$(
+_require_worktree_root() {
+    if [[ ! -d "${WORKTREE_ROOT}" ]]; then
+        echo "Worktree root '${WORKTREE_ROOT}' does not exist." >&2
+        echo "Create it with: hgcreate <remote> $(dirname "${WORKTREE_ROOT}")" >&2
+        return 1
+    fi
+}
+
+gtw() {
+    _require_worktree_root || return
+    cd "${WORKTREE_ROOT}"
+    ls
+}
+
+# Implementation of `hgd`. Executes in a subshell in order to use `set`, and
+# prints *only* the final directory that should be `cd`'d to to stdout on
+# success---which means we must be careful to redirect the output of all
+# commands when updating this function!
+_hgd() { echo "$(
         worktree_path="${WORKTREE_ROOT}/$1"
         main_path="${WORKTREE_ROOT}/${MAIN_BRANCH_NAME}"
         requested_ref="refs/heads/$1"
@@ -220,55 +227,56 @@ if [[ -d "${WORKTREE_ROOT}" ]]; then
         bazel build $INITIAL_TARGET >/dev/null 2>&1 &
         pwd
     )"; }
-    hgd() {
-        local worktree_path
-        local subshell_exit_code
-        worktree_path="$(_hgd "$1")"
-        subshell_exit_code="$?"
-        [[ -d "${worktree_path}" ]] &&
-            echo "Taking you to ${worktree_path} in this shell..." &&
-            cd "${worktree_path}"
-        return "${subshell_exit_code}"
-    }
+hgd() {
+    _require_worktree_root || return
+    local worktree_path
+    local subshell_exit_code
+    worktree_path="$(_hgd "$1")"
+    subshell_exit_code="$?"
+    [[ -d "${worktree_path}" ]] &&
+        echo "Taking you to ${worktree_path} in this shell..." &&
+        cd "${worktree_path}"
+    return "${subshell_exit_code}"
+}
 
-    _hgdelete() {
-        local branch_name="$1"
-        local worktree_path="${WORKTREE_ROOT}/${branch_name}"
-        set -euxo pipefail
-        local merge_time="$(branch_merged_upstream_time "${MAIN_BRANCH_NAME}" "${branch_name}")"
-        if [[ -z "${merge_time}" && "$2" != "-f" ]]; then
-            echo "Pass \"-f\" flag to ignore this and still attempt removal." >&2
-            echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!" >&2
-            return 1
-        fi
-        if [[ -d "${worktree_path}" ]]; then
-            echo -n "Attempting to remove git worktree at ${worktree_path}..."
-            if ! git worktree remove "${worktree_path}"; then
-                echo "FAILED. Pass '-f' to force." >&2
-                return 2
-            else
-                echo "Success!"
-            fi
-        fi
-        local local_commit_time="$(most_recent_commit_time "${branch_name}")"
-        if (($merge_time < $local_commit_time)); then
-            echo "FAILED. Local commits after merge. Leaving ${branch_name} intact." >&2
-            return 3
-        fi
-        echo -n "Attempting to remove branch '${branch_name}'..."
-        if ! git branch -D "$1"; then
-            echo "FAILED."
-            return 3
+_hgdelete() {
+    local branch_name="$1"
+    local worktree_path="${WORKTREE_ROOT}/${branch_name}"
+    set -euxo pipefail
+    local merge_time="$(branch_merged_upstream_time "${MAIN_BRANCH_NAME}" "${branch_name}")"
+    if [[ -z "${merge_time}" && "$2" != "-f" ]]; then
+        echo "Pass \"-f\" flag to ignore this and still attempt removal." >&2
+        echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!" >&2
+        return 1
+    fi
+    if [[ -d "${worktree_path}" ]]; then
+        echo -n "Attempting to remove git worktree at ${worktree_path}..."
+        if ! git worktree remove "${worktree_path}"; then
+            echo "FAILED. Pass '-f' to force." >&2
+            return 2
         else
             echo "Success!"
         fi
-        echo "Successfully scrubbed all references to $1"
-    }
-    hgdelete() {
-        # Subshell to allow us to `set -euxo`...etc locally.
-        (
-            _hgdelete "$@"
-        )
-        return $?
-    }
-fi
+    fi
+    local local_commit_time="$(most_recent_commit_time "${branch_name}")"
+    if (($merge_time < $local_commit_time)); then
+        echo "FAILED. Local commits after merge. Leaving ${branch_name} intact." >&2
+        return 3
+    fi
+    echo -n "Attempting to remove branch '${branch_name}'..."
+    if ! git branch -D "$1"; then
+        echo "FAILED."
+        return 3
+    else
+        echo "Success!"
+    fi
+    echo "Successfully scrubbed all references to $1"
+}
+hgdelete() {
+    _require_worktree_root || return
+    # Subshell to allow us to `set -euxo`...etc locally.
+    (
+        _hgdelete "$@"
+    )
+    return $?
+}
