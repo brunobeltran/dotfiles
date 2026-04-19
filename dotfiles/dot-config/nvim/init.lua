@@ -763,7 +763,9 @@ require('lazy').setup({
     },
     config = function()
       local formatters_by_ft = {
+        sh = { 'shfmt' },
         bash = { 'shfmt' },
+        zsh = { 'shfmt' },
         cpp = { 'clang_format' },
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
