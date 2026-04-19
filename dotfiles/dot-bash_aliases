@@ -1,6 +1,18 @@
-# shellcheck shell=bash disable=SC2164
+# shellcheck shell=bash disable=SC2164,SC2310
+# 2310: allow using || and && chains
+# 2164: allow "bare" `cd` instead of requiring `cd || exit`
+#
 
-# for sanity
+# DEFAULT_* environment variables are used to configure the Bash aliases below
+# in a centralized place. Even when there's a default value here, typically the
+# aliases below try to do the "right thing" (e.g., we infer the current git
+# worktree root, `DEFAULT_WORKTREE_ROOT` is only used when one is not found).
+DEFAULT_WORKTREE_ROOT="${HOME}/mergelabs"
+# When we create a new worktree, we immediately kick off a minimal target that
+# triggers the most expensive repository rules.
+DEFAULT_INITIAL_TARGET="//forest/building:workspace_test"
+
+# Copying historical "standard" Debian aliases for `ls` for my sanity.
 alias ls='ls --color=auto'
 alias ll='ls -alF'
 alias la='ls -A'
@@ -9,14 +21,15 @@ alias l='ls -CF'
 # Bazel should always secretly be Bazelisk if possible.
 alias bazel=bazelisk
 
-# for a beep
-alias beep='play -qn synth 1 sine 800 vol 1 '
-
-if [[ -f "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV" ]]; then
-    alias fury_init='export UV_INDEX_FOREST_USERNAME=$(cat "${HOME}/.secrets/forest-gemfury-deploy-brunobeltran-kOVSV")'
-else
-    alias fury_init='echo PLEASE INSTALL A GEMFURY DEPLOY KEY'
-fi
+# Most-POSIX-y beep sound
+alias beep='printf '\''\a'\'
+# Beep at 10Hz for `$1` seconds.
+beeps() {
+    for _ in $(seq 1 $((10 * $1))); do
+        printf '\a'
+        sleep 0.1
+    done
+}
 
 # Use the mac names for our copy buffer commands. wl-copy is a Wayland
 # replacement for xclip (requires the wl-clipboard package).
@@ -41,46 +54,111 @@ fi
 # makes all aliases accessible via sudo
 alias sudo='sudo '
 
-WORKTREE_ROOT="${HOME}/mergelabs"
-ORIGIN_REMOTE_NAME="origin"   # Where you create branches.
-UPSTREAM_REMOTE_NAME="origin" # Where 'main' lives.
-MAIN_BRANCH_NAME="main"
-# When we create a new worktree, we immediately kick off a minimal target that
-# triggers the most expensive repository rules.
-INITIAL_TARGET="//forest/building:workspace_test"
-
 # Convenience no-op function for when we want to print a message only in bash
 # debug---i.e., `set -x`--- mode. Basically a more semantically-reasonable way
 # to do something like `echo "Debug message" >/dev/null`.
 _INFO() {
-    # shellcheck disable=SC2317
+    # shellcheck disable=SC2329
     unused() {
         :
     }
+}
+
+# Use some "standard" heuristics to try to figure out the correct "default"
+# branch in the current context.
+#
+# If we're in an existing Git repo, we ask for the name of
+# `refs/remotes/*/HEAD`, which will look like "origin/master" or
+# "upstream/master" or similar.
+#
+# If there's not `refs/remotes/*/HEAD` or it doesn't resolve to a readable
+# symref of the expected format, we ask `git config init.defaultBranch`.
+# This fallback is not likely to work well for older repos that still use
+# `master`, but is good enough for me for now.
+print_default_branch() {
+    local branch_name
+    branch_name="$(
+        git for-each-ref --format='%(symref:short)' refs/remotes/*/HEAD |
+            head -n 1 |
+            cut -d/ -f2-
+    )"
+    if [[ -z "${branch_name}" ]]; then
+        # This works whether or not we're in a Git repo.
+        branch_name="$(git config init.defaultBranch)"
+    fi
+    # If Git is old enough to not have a default, the right default is probably
+    # "master" instead of "main". Modern `git` will always print `main` above.
+    echo "${branch_name:-master}"
+}
+
+# Get the "root" of the worktree (in the parlance of the `hg*` aliases defined
+# here). In a "regular" git repo, this is just the checked out worktree itself
+# folder, but for a branch-named worktree in a `hgcreate`-based layout, this is
+# the folder _containing_ all the worktree folders.
+print_worktree_root() {
+    # First, check if we're even in a repo, if not, fallback to our
+    # globally-configured default.
+    local toplevel
+    toplevel="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+        echo "${DEFAULT_WORKTREE_ROOT}"
+        return
+    }
+
+    # If we're inside a branch-named worktree (the hgcreate layout), climb up
+    # one level and confirm by looking for the sibling bare repo.
+    local branch
+    branch="$(git branch --show-current)"
+    if [[ -n "${branch}" && "${toplevel}" == */"${branch}" ]]; then
+        local parent="${toplevel%/"${branch}"}"
+        if [[ -d "${parent}/$(basename "${parent}").git" ]]; then
+            echo "${parent}"
+            return
+        fi
+    fi
+
+    echo "${toplevel}"
+}
+
+# Errors if there's not tracking information for the requested (or inferred
+# default) branch.
+print_remote_for_branch() {
+    local branch_name="${1:-$(print_default_branch)}"
+    local remote
+    remote="$(git config "branch.${branch_name}.remote")" || {
+        echo "No tracking remote configured for '${branch_name}'." >&2
+        echo "Set one with: git branch --set-upstream-to=origin/${branch_name}
+${branch_name}" >&2
+        return 1
+    }
+    echo "${remote}"
 }
 
 # Convenience function to check if a branch has an already-merged PR.
 branch_merged_upstream_time() {
     local upstream_base="$1" # usually `main` or `master`.
     local branch_name="$2"
-    local pr_info=$(gh pr list \
+    local pr_info
+    pr_info=$(gh pr list \
         --state all \
         --head "${branch_name}" \
         --base "${upstream_base}" \
         --json number,state,title,mergedAt \
         --limit 1)
-    if [[ $(echo "$pr_info" | jq 'length') -eq 0 ]]; then
+    if [[ $(echo "${pr_info}" | jq 'length') -eq 0 ]]; then
         echo "❌ No PR found from branch '${branch_name}' into branch '${upstream_base}'." >&2
         return 1
     fi
-    if [[ $(echo "$pr_info" | jq -r '.[0].state') != MERGED ]]; then
-        local pr_number=$(echo "$pr_info" | jq -r '.[0].number')
-        local pr_title=$(echo "$pr_info" | jq -r '.[0].title')
+    if [[ $(echo "${pr_info}" | jq -r '.[0].state') != MERGED ]]; then
+        local pr_number
+        pr_number=$(echo "${pr_info}" | jq -r '.[0].number')
+        local pr_title
+        pr_title=$(echo "${pr_info}" | jq -r '.[0].title')
         echo "🟡 Found un-merged PR #${pr_number} ('${pr_title}')." >&2
         return 2
     fi
     # Switch to just `-d` if using coreutils.
-    local github_date_string="$(echo "$pr_info" | jq -r '.[0].mergedAt')"
+    local github_date_string
+    github_date_string="$(echo "${pr_info}" | jq -r '.[0].mergedAt')"
     date -j -f "%Y-%m-%dT%H:%M:%S%z" "${github_date_string/Z/+0000}" +%s
     return 0
 }
@@ -88,7 +166,8 @@ branch_merged_upstream_time() {
 # Convenience function to print a branch's most recent commit in seconds since
 # epoch.
 most_recent_commit_time() {
-    local latest_commit_time_string="$(git log -1 --format=%cI "$1")"
+    local latest_commit_time_string
+    latest_commit_time_string="$(git log -1 --format=%cI "$1")"
     local bsd_friendly_time="${latest_commit_time_string:0:22}${latest_commit_time_string:23:2}"
     date -j -f "%Y-%m-%dT%H:%M:%S%z" "${bsd_friendly_time}" +%s
 }
@@ -105,12 +184,12 @@ most_recent_commit_time() {
 #   ${worktree_root_parent}/${repo_name}/${default_branch}/ (first worktree)
 hgcreate() {
     local remote="$1"
-    local worktree_root_parent="${2:-$HOME}"
+    local worktree_root_parent="${2:-${HOME}}"
 
     if [[ $# -lt 1 || -z "${remote}" || "${remote}" != *.git ]]; then
         echo "Usage: hgcreate <remote> [worktree_root_parent]" >&2
         echo "  remote: git remote URL to clone (e.g., git@github.com:org/repo.git)" >&2
-        echo "  worktree_root_parent: parent directory for the worktree root (default: \$HOME)" >&2
+        echo "  worktree_root_parent: parent directory for the worktree root (default: \$HOME=${HOME})" >&2
         return 1
     fi
 
@@ -142,7 +221,7 @@ hgcreate() {
 
     # Create .git file pointing to the bare repo so git commands work from
     # the worktree root directory.
-    echo "gitdir: ./${repo_name}.git" > "${worktree_root}/.git"
+    echo "gitdir: ./${repo_name}.git" >"${worktree_root}/.git"
 
     # Detect default branch (main, master, etc.).
     local default_branch
@@ -164,55 +243,64 @@ hgcreate() {
 }
 
 _require_worktree_root() {
-    if [[ ! -d "${WORKTREE_ROOT}" ]]; then
-        echo "Worktree root '${WORKTREE_ROOT}' does not exist." >&2
-        echo "Create it with: hgcreate <remote> $(dirname "${WORKTREE_ROOT}")" >&2
+    local worktree_root="${1:-$(print_worktree_root)}"
+    if [[ ! -d "${worktree_root}" ]]; then
+        echo "Worktree root '${worktree_root}' does not exist." >&2
+        echo "Create it with: hgcreate <remote> $(dirname "${worktree_root}")" >&2
         return 1
     fi
 }
 
+# "Go To Work": jumps to `DEFAULT_WORKTREE_ROOT`, prompting if it doesn't exist.
 gtw() {
-    _require_worktree_root || return
-    cd "${WORKTREE_ROOT}"
+    _require_worktree_root "${DEFAULT_WORKTREE_ROOT}" || return
+    cd "${DEFAULT_WORKTREE_ROOT}"
     ls
 }
 
-# Implementation of `hgd`. Executes in a subshell in order to use `set`, and
+# Implementation of `hgd`. Executes in a subshell in order to use `set -x`, and
 # prints *only* the final directory that should be `cd`'d to to stdout on
 # success---which means we must be careful to redirect the output of all
 # commands when updating this function!
-_hgd() { echo "$(
-        worktree_path="${WORKTREE_ROOT}/$1"
-        main_path="${WORKTREE_ROOT}/${MAIN_BRANCH_NAME}"
-        requested_ref="refs/heads/$1"
-        remote_ref="refs/remotes/${ORIGIN_REMOTE_NAME}/$1"
-        main_ref="refs/heads/${MAIN_BRANCH_NAME}"
-        set -euox pipefail
+_hgd() {
+    local branch_name
+    local worktree_root
+    local main_branch_name
+    local origin_remote_name
+    local initial_target
+
+    branch_name="$1"
+    worktree_root="$(print_worktree_root)"
+    main_branch_name="$(print_default_branch)"
+    origin_remote_name="$(print_remote_for_branch)"
+    initial_target="${DEFAULT_INITIAL_TARGET}"
+
+    echo "$(
+        worktree_path="${worktree_root}/${branch_name}"
+        requested_ref="refs/heads/${branch_name}"
+        remote_ref="refs/remotes/${origin_remote_name}/${branch_name}"
+        main_ref="refs/heads/${main_branch_name}"
+        set -euxo pipefail
         if [[ -d "${worktree_path}" ]]; then
             _INFO "Worktree exists, taking you there!" &&
                 cd "${worktree_path}" &&
                 pwd
             exit $?
         fi
-        _INFO "Fetching '${ORIGIN_REMOTE_NAME}' to ensure we know if the branch exists!"
-        git fetch ${ORIGIN_REMOTE_NAME} >/dev/null
+        _INFO "Fetching '${origin_remote_name}' to ensure we know if the branch exists!"
+        git fetch "${origin_remote_name}" >/dev/null
         if git show-ref --verify --quiet "${requested_ref}"; then
-            _INFO "Checking out existing branch...$1" &&
-                git worktree add "${worktree_path}" "$1" >/dev/null
+            _INFO "Checking out existing branch...${branch_name}" &&
+                git worktree add "${worktree_path}" "${branch_name}" >/dev/null
         elif git show-ref --verify --quiet "${remote_ref}"; then
-            _INFO "Creating branch from existing remote branch with same name...$1" &&
-                git worktree add -b "$1" "${worktree_path}" "${ORIGIN_REMOTE_NAME}/$1" >/dev/null
+            _INFO "Creating branch from existing remote branch with same name...${branch_name}" &&
+                git worktree add -b "${branch_name}" "${worktree_path}" "${origin_remote_name}/${branch_name}" >/dev/null
+        elif ! git show-ref --verify --quiet "${main_ref}"; then
+            _INFO "There does not seem to be a '${main_branch_name}' branch...please make one!"
+            exit 1
         else
-            if ! git show-ref --verify --quiet "${main_ref}"; then
-                _INFO "There does not seem to be a '${MAIN_BRANCH_NAME}' branch...please make one!"
-                exit 1
-            fi
-            if [[ ! -d "${main_path}" ]]; then
-                _INFO "There does not appear to be a worktree for the ${MAIN_BRANCH_NAME} branch...please make one!"
-                exit 2
-            fi
-            _INFO "Creating new worktree on fresh branch based on '${MAIN_BRANCH_NAME}'!"
-            if ! git worktree add "${worktree_path}" "${ORIGIN_REMOTE_NAME}/${MAIN_BRANCH_NAME}" -b "$1" >/dev/null; then
+            _INFO "Creating new worktree on fresh branch based on '${main_branch_name}'!"
+            if ! git worktree add "${worktree_path}" "${origin_remote_name}/${main_branch_name}" -b "${branch_name}" >/dev/null; then
                 _INFO "Failed to create worktree!"
                 exit 4
             fi
@@ -222,11 +310,18 @@ _hgd() { echo "$(
         _INFO "Pulling/updating all submodules..."
         git submodule update --init --recursive >/dev/null 2>&1
 
-        _INFO "Kicking off some slow repository rules in the background..."
-        _INFO "...it may take up to 5min for these to finish!"
-        bazel build $INITIAL_TARGET >/dev/null 2>&1 &
+        if bazel query "${initial_target}" >/dev/null 2>&1; then
+            _INFO "Kicking off some slow repository rules in the background..."
+            _INFO "...it may take up to 5min for these to finish!"
+            bazel build "${initial_target}" >/dev/null 2>&1 &
+        else
+            _INFO "Default target to auto-kickoff initial build for new"
+            _INFO "workspace (${initial_target}) does not exist in this"
+            _INFO "workspace."
+        fi
         pwd
-    )"; }
+    )"
+}
 hgd() {
     _require_worktree_root || return
     local worktree_path
@@ -241,9 +336,14 @@ hgd() {
 
 _hgdelete() {
     local branch_name="$1"
-    local worktree_path="${WORKTREE_ROOT}/${branch_name}"
+    local worktree_path
+    worktree_path="$(print_worktree_root)/${branch_name}"
+    local main_branch_name
+    main_branch_name="$(print_default_branch)"
+
     set -euxo pipefail
-    local merge_time="$(branch_merged_upstream_time "${MAIN_BRANCH_NAME}" "${branch_name}")"
+    local merge_time
+    merge_time="$(branch_merged_upstream_time "${main_branch_name}" "${branch_name}")"
     if [[ -z "${merge_time}" && "$2" != "-f" ]]; then
         echo "Pass \"-f\" flag to ignore this and still attempt removal." >&2
         echo "WARNING: \"-f\" flag FORCES worktree and local branch+remote deletion!" >&2
@@ -258,8 +358,9 @@ _hgdelete() {
             echo "Success!"
         fi
     fi
-    local local_commit_time="$(most_recent_commit_time "${branch_name}")"
-    if (($merge_time < $local_commit_time)); then
+    local local_commit_time
+    local_commit_time="$(most_recent_commit_time "${branch_name}")"
+    if ((merge_time < local_commit_time)); then
         echo "FAILED. Local commits after merge. Leaving ${branch_name} intact." >&2
         return 3
     fi
