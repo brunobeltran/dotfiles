@@ -14,6 +14,8 @@
     prompt = false
 [pull]
     rebase = true
+[include]
+    path = ~/developer/mergelabs/mglab/git/config
 [diff]
     tool = nvimdiff
 [alias]
@@ -29,5 +31,3 @@
     # List branches sorted by last-used date in reflog.
     lb = !git reflog show --pretty=format:'%gs ~ %gd' --date=relative | grep 'checkout:' | grep -oE '[^ ]+ ~ .*' | awk -F~ '!seen[$1]++' | head -n 10 | awk -F' ~ HEAD@{' '{printf(\"  \\033[33m%s: \\033[37m %s\\033[0m\\n\", substr($2, 1, length($2)-1), $1)}'
     rb = !git rebase --onto main $(git merge-base $(git rev-parse --abbrev-ref HEAD) main)
-[include]
-    path = ~/mergelabs/main/mglab/git/config

@@ -37,13 +37,12 @@ if [ -f "${HOME}/.bash_completion" ]; then
     . "${HOME}/.bash_completion"
 fi
 
-# set a basic prompt
+# set a basic prompt (to be overwritten by Starship below if available)
 PS1='[\u@\h \W]\n\$ '
 
 # Use the "starship" prompt if we have it.
 [[ -n $(which starship) ]] && eval "$(starship init bash)"
 
-[[ -f "${HOME}/.passwords" ]] && source "${HOME}/.passwords"
 [[ -f "${HOME}/.fzf.bash" ]] && source "${HOME}/.fzf.bash"
 [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
@@ -57,12 +56,6 @@ fi
 if [[ "${TERM_PROGRAM}" == "ghostty" ]]; then
     export TERM=xterm-256color
 fi
-if [[ -z "${PYENV_ROOT}" ]] && [[ -d "${HOME}/.pyenv" ]]; then
-    export PYENV_ROOT="${HOME}/.pyenv"
-fi
-if command -v pyenv >/dev/null; then
-    eval "$(pyenv init -)"
-    eval "$(pyenv virtualenv-init -)"
-fi
 
 [[ -f "${HOME}/.local/share/merge_io/dev_niceties/init.sh" ]] && source "${HOME}/.local/share/merge_io/dev_niceties/init.sh"
+[[ -f "$HOME/.local/bin/env" ]] && source "$HOME/.local/bin/env"
