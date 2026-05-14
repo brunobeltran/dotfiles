@@ -98,25 +98,17 @@ print_default_branch() {
 print_worktree_root() {
     # First, check if we're even in a repo, if not, fallback to our
     # globally-configured default.
-    local toplevel
-    toplevel="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    local bare_git_repo_dir
+    bare_git_repo_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || {
         echo "${DEFAULT_WORKTREE_ROOT}"
         return
     }
-
-    # If we're inside a branch-named worktree (the hgcreate layout), climb up
-    # one level and confirm by looking for the sibling bare repo.
-    local branch
-    branch="$(git branch --show-current)"
-    if [[ -n "${branch}" && "${toplevel}" == */"${branch}" ]]; then
-        local parent="${toplevel%/"${branch}"}"
-        if [[ -d "${parent}/$(basename "${parent}").git" ]]; then
-            echo "${parent}"
-            return
-        fi
-    fi
-
-    echo "${toplevel}"
+    # Convert maybe relative, e.g., "../../xyz.git" to absolute, e.g.,
+    # `/home/bruno/xyz/xyz.git`
+    local absolute_bare_dir
+    absolute_bare_dir="$(cd "${bare_git_repo_dir}" && pwd)"
+    # Finally return just e.g. `/home/bruno/xyz`.
+    dirname "${absolute_bare_dir}"
 }
 
 # Errors if there's not tracking information for the requested (or inferred
