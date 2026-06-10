@@ -111,21 +111,6 @@ done
 stow --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
 
 ##
-# Build and install our fonts directory.
-FONTS_DIR="${BUILD_DIR}/fonts"
-mkdir -p "${FONTS_DIR}"
-mkdir -p "${fonts_install_dir}"
-if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
-	wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
-	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
-fi
-stow --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
-# Validate fonts installation worked...it is very flaky/annoying on OS X.
-if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
-	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
-fi
-
-##
 # Validate install was clean
 #
 # If our dotfiles adoption led to any diff, we print an error message.
@@ -146,3 +131,29 @@ fi
 		echo "WARNING: a simple $(git checkout) should complete the install!"
 	fi
 }
+
+### Post-install
+
+##
+# Download TPM at install time to avoid having to maintain a Git submodule for
+# it.
+export TMUX_PLUGIN_MANAGER_PATH="${HOME}/.tmux/plugins/"
+if [ ! -d "${TMUX_PLUGIN_MANAGER_PATH}/tpm" ]; then
+	git clone https://github.com/tmux-plugins/tpm "${TMUX_PLUGIN_MANAGER_PATH}/tpm"
+fi
+"${TMUX_PLUGIN_MANAGER_PATH}/tpm/bin/install_plugins"
+
+##
+# Build and install our fonts directory.
+FONTS_DIR="${BUILD_DIR}/fonts"
+mkdir -p "${FONTS_DIR}"
+mkdir -p "${fonts_install_dir}"
+if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
+	wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
+	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
+fi
+stow --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
+# Validate fonts installation worked...it is very flaky/annoying on OS X.
+if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
+	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
+fi
