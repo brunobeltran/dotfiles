@@ -51,6 +51,41 @@ if [[ -x "$(command -v nvim)" ]]; then
     alias vimdiff='nvim -d'
 fi
 
+
+choose_vpn() {
+    case "$1" in
+    tailscale)
+        echo "[-] Stopping Twingate..."
+        sudo twingate stop
+        sudo twingate service-stop
+        echo "[+] Starting Tailscale..."
+        sudo systemctl start tailscaled
+        sudo tailscale up --accept-routes=true
+        ;;
+    twingate)
+        echo "[-] Stopping Tailscale..."
+        sudo tailscale down
+        sudo systemctl stop tailscaled
+        echo "[+] Starting Twingate..."
+        sudo twingate service-start
+        sudo twingate start
+        sudo twingate auth "Forest CI Bastion"
+        ;;
+    off)
+        echo "[-] Stopping Twingate..."
+        sudo twingate stop
+        sudo twingate service-stop
+        echo "[-] Stopping Tailscale..."
+        sudo tailscale down
+        sudo systemctl stop tailscaled
+        ;;
+    *)
+        echo "Usage: $0 {tailscale | twingate | off}"
+        exit 1
+        ;;
+    esac
+}
+
 # makes all aliases accessible via sudo
 alias sudo='sudo '
 
