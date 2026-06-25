@@ -55,12 +55,6 @@ if ! which starship >/dev/null 2>&1; then
 fi
 
 ##
-# Install TPM, the Tmux Plugin Manager
-if [[ ! -d dotfiles/dot-tmux/plugins/tpm ]]; then
-	git clone https://github.com/tmux-plugins/tpm dotfiles/dot-tmux/plugins/tpm
-fi
-
-##
 # Build NeoVim from source.
 NEOVIM_SOURCE_DIR="${BUILD_DIR}/neovim-src"
 NEOVIM_BUILD_DIR="${BUILD_DIR}/neovim-build"
