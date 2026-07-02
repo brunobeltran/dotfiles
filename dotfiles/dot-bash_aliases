@@ -412,3 +412,70 @@ hgdelete() {
     )
     return $?
 }
+
+# Extract a .deb into a single folder named after the deb (sans extension),
+# splitting the archive's two payloads into obvious subfolders:
+#   <name>/control/  the package metadata (control.tar.*): control file,
+#                    maintainer scripts, md5sums, conffiles, etc.
+#   <name>/data/     the actual installed filesystem tree (data.tar.*), i.e.
+#                    what lands under / when you `dpkg -i` the package.
+# A .deb is really just an `ar` archive of three members---debian-binary plus
+# those two tarballs---so we use `ar` + `tar` rather than dpkg-deb to stay
+# portable to macOS/BSD, where dpkg-deb usually isn't installed. We don't
+# hard-code tar's -z/-J: both GNU tar and macOS's libarchive tar sniff the
+# compression (gz/xz/zst) from the file itself.
+# Usage: debx <package.deb> [output_parent_dir]
+debx() {
+    local deb="$1"
+    local output_parent="${2:-.}"
+
+    if [[ $# -lt 1 || -z "${deb}" || "${deb}" != *.deb ]]; then
+        echo "Usage: debx <package.deb> [output_parent_dir]" >&2
+        echo "  package.deb: the .deb file to extract" >&2
+        echo "  output_parent_dir: where to create the output folder (default: .)" >&2
+        return 1
+    fi
+    if [[ ! -f "${deb}" ]]; then
+        echo "No such file: '${deb}'." >&2
+        return 1
+    fi
+    if [[ ! -d "${output_parent}" ]]; then
+        echo "Output parent directory '${output_parent}' does not exist." >&2
+        return 1
+    fi
+
+    # Resolve to an absolute path since we cd into the output dir below.
+    local deb_abs
+    deb_abs="$(cd "$(dirname "${deb}")" && pwd)/$(basename "${deb}")"
+
+    local name
+    name="$(basename "${deb}" .deb)"
+    local out_dir="${output_parent}/${name}"
+
+    if [[ -e "${out_dir}" ]]; then
+        echo "Output path '${out_dir}' already exists." >&2
+        return 1
+    fi
+
+    mkdir -p "${out_dir}/control" "${out_dir}/data"
+
+    # Unpack in a subshell so the cd + intermediate tarballs stay contained.
+    (
+        cd "${out_dir}"
+        ar x "${deb_abs}" || exit 2
+        tar -xf control.tar.* -C control || exit 3
+        tar -xf data.tar.* -C data || exit 4
+        # Drop the intermediate ar members now that they're unpacked.
+        rm -f debian-binary control.tar.* data.tar.*
+    )
+    local rc=$?
+    if [[ ${rc} -ne 0 ]]; then
+        echo "Failed to extract '${deb}' (stage ${rc})." >&2
+        rm -rf "${out_dir}"
+        return "${rc}"
+    fi
+
+    echo "Done! Extracted '${deb}' into ${out_dir}"
+    echo "  ${out_dir}/control  (package metadata + maintainer scripts)"
+    echo "  ${out_dir}/data     (installed filesystem tree)"
+}
