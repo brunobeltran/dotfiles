@@ -115,14 +115,33 @@ fi
 echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
-# Actually install all "dotfiles".
+# Manually "adopt" all folder-level config.
 #
-# The manual "adopt" pre-pass that used to live here (working around
-# https://github.com/aspiers/stow/issues/19) is no longer needed: the vendored
-# stow 2.4.1 folds directory-level dotfiles correctly, so a pre-existing real
-# `~/.config` keeps its unmanaged contents and only our entries get symlinked.
-# `--adopt` pulls any conflicting pre-existing regular file into its tracked
-# `dot-` counterpart, and the validation step below reports if it differed.
+# Otherwise we get an error like
+# ```
+# stow: ERROR: stow_contents() called with non-directory path: developer/bruno-dotfiles/dotfiles/.vim
+# ```
+#
+# https://github.com/aspiers/stow/issues/19
+for folder in dotfiles/*; do
+	[[ -d "${folder}" ]] || continue
+	real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
+	eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
+	if [[ -L "${eventual_link_location}" ]]; then
+		rm "${eventual_link_location}"
+		continue
+	fi
+	if [[ -d "${eventual_link_location}" ]]; then
+		cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
+		rm -rf "${folder}"
+		cp -r "${eventual_link_location}.bak" "${folder}"
+		rm -rf "${eventual_link_location}"
+		ln -s "${real_folder_path}" "${eventual_link_location}"
+	fi
+done
+
+##
+# Actually install all "dotfiles".
 "${STOW}" --dir "${SCRIPT_DIR}" --target="${HOME}" --adopt --dotfiles dotfiles
 
 ##
