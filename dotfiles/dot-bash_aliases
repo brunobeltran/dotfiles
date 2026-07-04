@@ -51,7 +51,6 @@ if [[ -x "$(command -v nvim)" ]]; then
     alias vimdiff='nvim -d'
 fi
 
-
 choose_vpn() {
     case "$1" in
     tailscale)
@@ -478,4 +477,41 @@ debx() {
     echo "Done! Extracted '${deb}' into ${out_dir}"
     echo "  ${out_dir}/control  (package metadata + maintainer scripts)"
     echo "  ${out_dir}/data     (installed filesystem tree)"
+}
+
+# Launch Claude Code for the two cases I actually reach for: "max" when I want
+# the most capable model thinking as hard as it can, and "quick" when I want a
+# fast, cheap model for a throwaway question. Extra args pass straight through,
+# so e.g. `claude-quick -p 'one-liner?'` still works.
+#
+# claude-max runs Fable in "ultracode" mode: a session settings key that pins
+# xhigh effort and turns on standing dynamic-workflow orchestration. It's a
+# settings flag (there's no --effort ultracode), and it needs the Workflows
+# feature enabled, so we set both. Note: don't add --effort here---an explicit
+# effort override would clobber ultracode's xhigh and disable the mode.
+alias claude-max='claude --model fable --settings '\''{"ultracode": true, "enableWorkflows": true}'\'''
+alias claude-quick='claude --model haiku --effort low'
+
+# Keep the display awake by nudging the mouse cursor 1px every `$1` (default
+# 15) seconds. macOS-only. AppleScript proper cannot move the cursor, so we use
+# osascript's JavaScript-for-Automation dialect to post CoreGraphics mouse
+# events, which (unlike CGWarpMouseCursorPosition) reset the system idle timer.
+# Runs in the foreground; Ctrl-C to stop. See also the built-in `caffeinate -d`
+# for a nudge-free alternative.
+jiggle() {
+    local interval="${1:-15}"
+    echo "Nudging mouse every ${interval}s to keep the display awake (Ctrl-C to stop)..."
+    while true; do
+        # shellcheck disable=SC2016
+        osascript -l JavaScript -e '
+            ObjC.import("CoreGraphics");
+            const pos = $.CGEventGetLocation($.CGEventCreate($()));
+            const move = (x, y) =>
+                $.CGEventPost(0, $.CGEventCreateMouseEvent($(), 5, {x: x, y: y}, 0));
+            move(pos.x + 1, pos.y);
+            delay(0.05);
+            move(pos.x, pos.y);
+        '
+        sleep "${interval}"
+    done
 }
