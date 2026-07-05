@@ -22,8 +22,9 @@ paths_to_append+=(/opt/airwave/bin /Applications/Inkscape.app/Contents/MacOS)
 # the order they are found in the `paths_to_prepend` array.
 
 # I like begin able to execute things in the working directory with highest
-# priority
-paths_to_prepend=("." "${HOME}/bin" "${HOME}/.local/bin")
+# priority. Note that `.bin` is owned by our dotfiles repo, for scripts too
+# large for `.bash_aliases` to inline.
+paths_to_prepend=("." "${HOME}/.bin" "${HOME}/bin" "${HOME}/.local/bin")
 
 # Highest non-local priority goes to our from-source builds.
 paths_to_prepend+=("${DOTFILES_BUILD_PATH}/neovim-build/bin" "${DOTFILES_BUILD_PATH}/fzf/bin")

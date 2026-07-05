@@ -1,0 +1,274 @@
+#!/usr/bin/env bash
+# claude-sessions — list Claude Code sessions, filterable by age, size, and time.
+#
+# Defaults to the current git worktree, newest first, capped at 5. Read-only,
+# no side effects. Titles/dates are only computed for the rows actually shown,
+# and stat is batched per directory, so it stays fast even in worktrees with
+# many large sessions.
+#
+# Usage:
+#   claude-sessions [options]
+#
+# Options:
+#   -a, --all            every project/worktree (adds a WORKTREE column)
+#   -w, --worktree DIR   sessions for a specific worktree/dir (default: current)
+#       --newer DUR      only sessions modified within DUR   (e.g. 30m, 12h, 2d)
+#       --older DUR      only sessions older than DUR
+#       --min-size SIZE  only sessions >= SIZE               (e.g. 50k, 1M)
+#       --max-size SIZE  only sessions <= SIZE
+#       --sort age|size  sort key (default: age)
+#   -n, --limit N        show at most N sessions (default 5; 0 = no limit)
+#   -i, --ids            print only session ids (scriptable)
+#   -h, --help           this help
+#
+# Env:
+#   CLAUDE_PROJECTS_DIR  session storage (default: ~/.claude/projects)
+set -euo pipefail
+
+PROJECTS="${CLAUDE_PROJECTS_DIR:-$HOME/.claude/projects}"
+NOW=$(date +%s)
+
+# Claude encodes a session's cwd into its project-dir name by replacing every
+# non-alphanumeric character with "-". This reproduces that mapping exactly.
+encode() { printf '%s' "$1" | sed 's/[^a-zA-Z0-9]/-/g'; }
+
+dur2sec() {
+  local v="$1"
+  if [[ "$v" =~ ^([0-9]+)([smhd]?)$ ]]; then
+    local n="${BASH_REMATCH[1]}" u="${BASH_REMATCH[2]}"
+    case "$u" in
+    s | "") echo "$n" ;;
+    m) echo $((n * 60)) ;;
+    h) echo $((n * 3600)) ;;
+    d) echo $((n * 86400)) ;;
+    esac
+  else
+    echo "invalid duration: $v (use e.g. 30m, 12h, 2d)" >&2
+    return 1
+  fi
+}
+
+size2b() {
+  local v="$1"
+  if [[ "$v" =~ ^([0-9]+)([bkKmMgG]?)$ ]]; then
+    local n="${BASH_REMATCH[1]}" u="${BASH_REMATCH[2]}"
+    case "$u" in
+    "" | b) echo "$n" ;;
+    k | K) echo $((n * 1024)) ;;
+    m | M) echo $((n * 1024 * 1024)) ;;
+    g | G) echo $((n * 1024 * 1024 * 1024)) ;;
+    esac
+  else
+    echo "invalid size: $v (use e.g. 50k, 1M, 2G)" >&2
+    return 1
+  fi
+}
+
+reltime() {
+  local secs=$((NOW - $1))
+  if ((secs < 0)); then secs=0; fi
+  if ((secs < 3600)); then
+    printf '%dm' $((secs / 60))
+  elif ((secs < 86400)); then
+    printf '%dh' $((secs / 3600))
+  else printf '%dd' $((secs / 86400)); fi
+}
+
+bytes2h() {
+  local b="$1"
+  if ((b < 1024)); then
+    printf '%dB' "$b"
+  elif ((b < 1048576)); then
+    printf '%dK' $(((b + 512) / 1024))
+  elif ((b < 1073741824)); then
+    awk -v x="$b" 'BEGIN { printf "%.1fM", x / 1048576 }'
+  else awk -v x="$b" 'BEGIN { printf "%.1fG", x / 1073741824 }'; fi
+}
+
+# Best label per session file: AI title, else last prompt, else first user text.
+# Takes file paths as arguments and prints one title per path, in order — a
+# single interpreter startup for all rows rather than one each.
+titles_for() {
+  python3 - "$@" 2>/dev/null <<'PY' || true
+import json, sys
+for path in sys.argv[1:]:
+    title = prompt = user = None
+    try:
+        with open(path) as fh:
+            for line in fh:
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                t = d.get("type")
+                if t == "ai-title":
+                    title = d.get("aiTitle") or title
+                elif t == "last-prompt":
+                    prompt = d.get("lastPrompt") or prompt
+                elif t == "user" and user is None:
+                    c = d.get("message", {}).get("content")
+                    if isinstance(c, str):
+                        user = c
+                    elif isinstance(c, list):
+                        for p in c:
+                            if isinstance(p, dict) and p.get("type") == "text":
+                                user = p["text"]
+                                break
+    except OSError:
+        pass
+    print((title or prompt or user or "").strip().replace("\n", " ").replace("\t", " ")[:70])
+PY
+}
+
+# --- args ---
+all=0 worktree="" newer="" older="" minsize="" maxsize="" sort_key="age" limit=5 ids_only=0
+while (($#)); do
+  case "$1" in
+  -a | --all)
+    all=1
+    shift
+    ;;
+  -w | --worktree)
+    worktree="$2"
+    shift 2
+    ;;
+  --newer)
+    newer=$(dur2sec "$2")
+    shift 2
+    ;;
+  --older)
+    older=$(dur2sec "$2")
+    shift 2
+    ;;
+  --min-size)
+    minsize=$(size2b "$2")
+    shift 2
+    ;;
+  --max-size)
+    maxsize=$(size2b "$2")
+    shift 2
+    ;;
+  --sort)
+    sort_key="$2"
+    shift 2
+    ;;
+  -n | --limit)
+    limit="$2"
+    shift 2
+    ;;
+  -i | --ids)
+    ids_only=1
+    shift
+    ;;
+  -h | --help)
+    sed -n '2,/^set /{/^set /d;s/^# \{0,1\}//p}' "$0"
+    exit 0
+    ;;
+  *)
+    echo "unknown option: $1" >&2
+    exit 2
+    ;;
+  esac
+done
+
+# --- which project dirs to scan ---
+dirs=()
+if ((all)); then
+  shopt -s nullglob
+  for d in "$PROJECTS"/*/; do dirs+=("${d%/}"); done
+  shopt -u nullglob
+else
+  if [[ -n "$worktree" ]]; then
+    root="$(git -C "$worktree" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$worktree")"
+  else
+    root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  fi
+  dirs=("$PROJECTS/$(encode "$root")")
+fi
+
+# --- worktree labels (only needed for --all's WORKTREE column) ---
+declare -A LABEL
+if ((all)); then
+  while read -r wt; do
+    if [[ -n "$wt" ]]; then LABEL["$(encode "$wt")"]="${wt#/Users/*/mergelabs/}"; fi
+  done < <(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2}')
+fi
+
+label_for() {
+  local base="${1##*/}"
+  if [[ -n "${LABEL[$base]:-}" ]]; then
+    printf '%s' "${LABEL[$base]}"
+  else printf '%s' "${base#-Users-*-mergelabs-}"; fi
+}
+
+# Gather candidates: one batched stat per dir, filters applied in awk.
+# Emits: mtime <TAB> size <TAB> id <TAB> file <TAB> label
+gather() {
+  local dir lbl
+  shopt -s nullglob
+  for dir in "${dirs[@]}"; do
+    [[ -d "$dir" ]] || continue
+    local files=("$dir"/*.jsonl)
+    if ((${#files[@]} == 0)); then continue; fi
+    lbl=$(label_for "$dir")
+    stat -f '%m %z %N' "${files[@]}" | awk \
+      -v now="$NOW" -v newer="$newer" -v older="$older" \
+      -v minsz="$minsize" -v maxsz="$maxsize" -v lbl="$lbl" '
+      {
+        m = $1; sz = $2; path = $3
+        if (newer != "" && now - m > newer) next
+        if (older != "" && now - m < older) next
+        if (minsz != "" && sz < minsz)      next
+        if (maxsz != "" && sz > maxsz)       next
+        n = split(path, a, "/"); id = a[n]; sub(/\.jsonl$/, "", id)
+        printf "%s\t%s\t%s\t%s\t%s\n", m, sz, id, path, lbl
+      }'
+  done
+  shopt -u nullglob
+}
+
+case "$sort_key" in
+age) sort_col=1 ;;
+size) sort_col=2 ;;
+*)
+  echo "invalid --sort: $sort_key (age|size)" >&2
+  exit 2
+  ;;
+esac
+
+# Sort, THEN apply the limit — so the expensive per-row work below (title parse,
+# date, human size) only touches the rows we actually print.
+rows=$(gather | sort -t$'\t' -k${sort_col},${sort_col}rn)
+if ((limit > 0)); then rows=$(printf '%s\n' "$rows" | sed -n "1,${limit}p"); fi
+[[ -n "$rows" ]] || {
+  echo "no matching sessions" >&2
+  exit 0
+}
+
+# --- output ---
+if ((ids_only)); then
+  printf '%s\n' "$rows" | cut -f3
+  exit 0
+fi
+
+# Parse every shown row's title in one python call, aligned to row order.
+mapfile -t FILES < <(printf '%s\n' "$rows" | cut -f4)
+mapfile -t TITLES < <(titles_for "${FILES[@]}")
+
+{
+  if ((all)); then
+    printf 'AGE\tSIZE\tMODIFIED\tWORKTREE\tID\tTITLE\n'
+  else printf 'AGE\tSIZE\tMODIFIED\tID\tTITLE\n'; fi
+  i=0
+  while IFS=$'\t' read -r m sz id _ lbl; do
+    title="${TITLES[i]:-}"
+    i=$((i + 1))
+    [[ -n "$id" ]] || continue
+    age=$(reltime "$m")
+    hsz=$(bytes2h "$sz")
+    when=$(date -r "$m" '+%Y-%m-%d %H:%M')
+    if ((all)); then
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$age" "$hsz" "$when" "$lbl" "$id" "$title"
+    else printf '%s\t%s\t%s\t%s\t%s\n' "$age" "$hsz" "$when" "$id" "$title"; fi
+  done <<<"$rows"
+} | column -t -s $'\t'
