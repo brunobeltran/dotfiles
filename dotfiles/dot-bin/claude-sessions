@@ -28,6 +28,45 @@ set -euo pipefail
 PROJECTS="${CLAUDE_PROJECTS_DIR:-$HOME/.claude/projects}"
 NOW=$(date +%s)
 
+# --- portability: BSD (macOS) vs GNU (Linux) coreutils differ in flags ---
+if stat -c '%Y' . >/dev/null 2>&1; then
+  # GNU stat: -c format, %Y mtime, %s size, %n name
+  stat_batch() { stat -c '%Y %s %n' "$@"; }
+else
+  # BSD stat: -f format, %m mtime, %z size, %N name
+  stat_batch() { stat -f '%m %z %N' "$@"; }
+fi
+
+if date --version >/dev/null 2>&1; then
+  # GNU date: epoch via -d @SECONDS
+  date_at() { date -d "@$1" '+%Y-%m-%d %H:%M'; }
+else
+  # BSD date: epoch via -r SECONDS
+  date_at() { date -r "$1" '+%Y-%m-%d %H:%M'; }
+fi
+
+# column(1) isn't always installed (e.g. minimal Linux); fall back to awk.
+if command -v column >/dev/null 2>&1; then
+  tabulate() { column -t -s $'\t'; }
+else
+  tabulate() {
+    awk -F'\t' '
+      { for (i = 1; i <= NF; i++) { row[NR, i] = $i; if (length($i) > w[i]) w[i] = length($i) }
+        if (NF > maxf) maxf = NF }
+      END {
+        for (r = 1; r <= NR; r++) {
+          line = ""
+          for (i = 1; i <= maxf; i++) {
+            cell = row[r, i]
+            if (i < maxf) line = line sprintf("%-*s  ", w[i], cell)
+            else          line = line cell
+          }
+          print line
+        }
+      }'
+  }
+fi
+
 # Claude encodes a session's cwd into its project-dir name by replacing every
 # non-alphanumeric character with "-". This reproduces that mapping exactly.
 encode() { printf '%s' "$1" | sed 's/[^a-zA-Z0-9]/-/g'; }
@@ -190,7 +229,12 @@ fi
 declare -A LABEL
 if ((all)); then
   while read -r wt; do
-    if [[ -n "$wt" ]]; then LABEL["$(encode "$wt")"]="${wt#/Users/*/mergelabs/}"; fi
+    if [[ -n "$wt" ]]; then
+      lbl="${wt#/Users/*/mergelabs/}"
+      lbl="${lbl#/home/*/mergelabs/}"
+      lbl="${lbl#"$HOME"/}"
+      LABEL["$(encode "$wt")"]="$lbl"
+    fi
   done < <(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2}')
 fi
 
@@ -198,7 +242,13 @@ label_for() {
   local base="${1##*/}"
   if [[ -n "${LABEL[$base]:-}" ]]; then
     printf '%s' "${LABEL[$base]}"
-  else printf '%s' "${base#-Users-*-mergelabs-}"; fi
+  else
+    local stripped="${base#-Users-*-mergelabs-}"
+    stripped="${stripped#-home-*-mergelabs-}"
+    stripped="${stripped#-Users-*-}"
+    stripped="${stripped#-home-*-}"
+    printf '%s' "$stripped"
+  fi
 }
 
 # Gather candidates: one batched stat per dir, filters applied in awk.
@@ -211,7 +261,7 @@ gather() {
     local files=("$dir"/*.jsonl)
     if ((${#files[@]} == 0)); then continue; fi
     lbl=$(label_for "$dir")
-    stat -f '%m %z %N' "${files[@]}" | awk \
+    stat_batch "${files[@]}" | awk \
       -v now="$NOW" -v newer="$newer" -v older="$older" \
       -v minsz="$minsize" -v maxsz="$maxsize" -v lbl="$lbl" '
       {
@@ -266,9 +316,9 @@ mapfile -t TITLES < <(titles_for "${FILES[@]}")
     [[ -n "$id" ]] || continue
     age=$(reltime "$m")
     hsz=$(bytes2h "$sz")
-    when=$(date -r "$m" '+%Y-%m-%d %H:%M')
+    when=$(date_at "$m")
     if ((all)); then
       printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$age" "$hsz" "$when" "$lbl" "$id" "$title"
     else printf '%s\t%s\t%s\t%s\t%s\n' "$age" "$hsz" "$when" "$id" "$title"; fi
   done <<<"$rows"
-} | column -t -s $'\t'
+} | tabulate
