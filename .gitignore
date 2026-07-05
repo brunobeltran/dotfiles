@@ -12,6 +12,7 @@ dotfiles/dot-config/caja/
 dotfiles/dot-config/cinnamon*
 dotfiles/dot-config/dconf/
 dotfiles/dot-config/evolution/
+dotfiles/dot-config/gcloud
 dotfiles/dot-config/google-chrome
 dotfiles/dot-config/gtk-3.0/
 dotfiles/dot-config/htop
