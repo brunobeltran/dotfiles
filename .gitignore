@@ -16,6 +16,7 @@ dotfiles/dot-config/htop
 dotfiles/dot-config/ibus/
 dotfiles/dot-config/kitty/kitty.conf.bak
 dotfiles/dot-config/menus/
+dotfiles/dot-config/mozilla/
 dotfiles/dot-config/nemo/
 dotfiles/dot-config/op/
 dotfiles/dot-config/pulse/
