@@ -31,7 +31,7 @@ vim.g.have_nerd_font = true
 -- Set most basic Vim options in a 'shared.vim' file that can also be using by
 -- (non-neo) Vim.
 local shared_vim_config = os.getenv 'HOME' .. '/.vim/shared.vim'
-if not vim.loop.fs_stat(shared_vim_config) then
+if not vim.uv.fs_stat(shared_vim_config) then
   print('Could not find shared vim config at: ' .. shared_vim_config)
 else
   vim.cmd('source ' .. shared_vim_config)
@@ -96,22 +96,22 @@ vim.keymap.set('n', '<leader>tq', vim.diagnostic.setloclist, { desc = "[T]oggle 
 
 -- Git
 vim.keymap.set('n', '<leader>Ga', vim.cmd.Gwrite, { desc = '[G]it [A]dd current file' })
-vim.keymap.set('n', '<leader>Gs', vim.cmd.Gstatus, { desc = '[G]it [S]tatus' })
+vim.keymap.set('n', '<leader>Gs', vim.cmd.Git, { desc = '[G]it [S]tatus' })
 vim.keymap.set('n', '<leader>Gc', function()
-  vim.cmd [[ Gcommit -v -q ]]
+  vim.cmd [[ Git commit -v -q ]]
 end, { desc = '[G]it [C]ommit' })
-vim.keymap.set('n', '<leader>GD', vim.cmd.Gdiff, { desc = '[G]it [D]iff with Fugitive' })
+vim.keymap.set('n', '<leader>GD', vim.cmd.Gdiffsplit, { desc = '[G]it [D]iff with Fugitive' })
 vim.keymap.set('n', '<leader>Gd', vim.cmd.Gvdiffsplit, { desc = '[G]it [d]iffsplit current file' })
 vim.keymap.set('n', '<leader>Gr', vim.cmd.Gread, { desc = '[G]it [R]ead/Checkout/Reset current file' })
 vim.keymap.set('n', '<leader>Gl', function()
   vim.cmd [[Git! lg ]]
 end, { desc = '[G]it [l]g preview' })
-vim.keymap.set('n', '<leader>GL', vim.cmd.Glog, { desc = '[G]it [L]og' })
+vim.keymap.set('n', '<leader>GL', vim.cmd.Gclog, { desc = '[G]it [L]og' })
 vim.keymap.set('n', '<leader>Gps', function()
-  vim.cmd [[Dispatch! git push]]
+  vim.cmd [[Git push]]
 end, { desc = '[G]it [P]u[s]h' })
 vim.keymap.set('n', '<leader>Gpl', function()
-  vim.cmd [[Dispatch! git pull]]
+  vim.cmd [[Git pull]]
 end, { desc = '[G]it [P]u[l]l' })
 
 -- Keybinds to make split navigation easier.  # NOQA: E501
@@ -186,12 +186,12 @@ vim.keymap.set('n', '<leader>fll', ':set paste<CR>A  # NOQA: E501<ESC>:set nopas
 
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
---  See `:help vim.highlight.on_yank()`
+--  See `:help vim.hl.hl_op()`
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
-    vim.highlight.on_yank()
+    vim.hl.hl_op()
   end,
 })
 
@@ -419,7 +419,6 @@ require('lazy').setup({
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
-    branch = '0.1.x',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -593,7 +592,7 @@ require('lazy').setup({
           -- Make inlay hints (e.g., visually make `f(5)` into `f(x=5)`)
           -- toggle-able. We usually don't want them,
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
@@ -642,30 +641,40 @@ require('lazy').setup({
         --
         pyright = {
           cmd = { 'pyright-langserver', '--stdio' }, -- Same as default, copied here for reference.
-          root_dir = function(filename, bufnr)
+          filetypes = { 'python' },
+          -- Native vim.lsp.config contract: receive (bufnr, on_dir) and call
+          -- on_dir(dir) to attach; not calling it means "don't attach".
+          root_dir = function(bufnr, on_dir)
+            local filename = vim.api.nvim_buf_get_name(bufnr)
             local bazel_root = _bazel_workspace_root(filename)
             if bazel_root ~= nil then
-              return bazel_root
+              return on_dir(bazel_root)
             end
             local python_root = vim.fs.root(filename, { 'pyproject.toml', 'setup.py' })
             if python_root ~= nil then
-              return python_root
+              return on_dir(python_root)
             end
-            local cwd = vim.fn.getcwd()
-            bazel_root = _bazel_workspace_root(cwd)
+            bazel_root = _bazel_workspace_root(vim.fn.getcwd())
             if bazel_root ~= nil then
-              return bazel_root
+              return on_dir(bazel_root)
             end
-            return nil
           end,
-          on_new_config = function(new_config, new_root_dir)
+          -- before_init runs after the server process is already spawned, so a
+          -- `--pythonpath` flag would be too late; settings.python.pythonPath
+          -- is the equivalent knob.
+          before_init = function(_, config)
             local python_path = nil
-            local bazel_python_bin = vim.fs.joinpath(new_root_dir, '.pyright_python_executable')
-            if vim.fn.filereadable(bazel_python_bin) then
-              python_path = bazel_python_bin
+            if config.root_dir then
+              local bazel_python_bin = vim.fs.joinpath(config.root_dir, '.pyright_python_executable')
+              if vim.fn.filereadable(bazel_python_bin) == 1 then
+                python_path = bazel_python_bin
+              end
             end
             if python_path == nil then
-              python_path = vim.fn.exepath 'python'
+              local exe = vim.fn.exepath 'python'
+              if exe ~= '' then
+                python_path = exe
+              end
             end
             if python_path == nil then
               vim.notify(
@@ -673,15 +682,13 @@ require('lazy').setup({
                 vim.log.levels.WARN
               )
             else
-              new_config.cmd[#new_config.cmd + 1] = '--pythonpath'
-              new_config.cmd[#new_config.cmd + 1] = python_path
+              config.settings = config.settings or {}
+              config.settings.python = vim.tbl_deep_extend('force', config.settings.python or {}, {
+                pythonPath = python_path,
+              })
             end
           end,
-          settings = {
-            -- python = {
-            --   pythonPath = vim.fn.exepath 'python',
-            -- },
-          },
+          settings = {},
         },
         lua_ls = {
           -- cmd = { ... },
@@ -710,24 +717,32 @@ require('lazy').setup({
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
+      --
+      -- NOTE: this must stay the single mason-tool-installer.setup() call:
+      -- each call *replaces* (not merges) ensure_installed, so the conform
+      -- formatters and nvim-lint linters are listed here too.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        -- Formatters used by conform.nvim
+        'shfmt',
+        'clang-format',
+        'ruff',
+        'sqlfluff',
+        'mdformat',
+        -- Linters used by nvim-lint
+        'hadolint',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('mason-lspconfig').setup {
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
+      -- mason-lspconfig v2 removed the `handlers` option; it auto-enables
+      -- installed servers via vim.lsp.enable(), which picks up any config
+      -- registered through vim.lsp.config().
+      vim.lsp.config('*', { capabilities = capabilities })
+      for name, cfg in pairs(servers) do
+        vim.lsp.config(name, cfg)
+      end
+      require('mason-lspconfig').setup {}
     end,
   },
 
@@ -776,13 +791,8 @@ require('lazy').setup({
         -- You can use 'stop_after_first' to run the first available formatter from the list
         -- javascript = { "prettierd", "prettier", stop_after_first = true },
       }
-      local ensure_installed = {}
-      for _, formatters in pairs(formatters_by_ft) do
-        for _, formatter in ipairs(formatters) do
-          table.insert(ensure_installed, formatter)
-        end
-      end
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      -- Formatter binaries are installed by the single
+      -- mason-tool-installer.setup() call in the LSP block above.
       require('conform').setup {
         notify_on_error = true,
         format_on_save = function(bufnr)
@@ -966,13 +976,8 @@ require('lazy').setup({
         -- Not needed since we have `terraformls`.
         -- terraform = { 'tflint' },
       }
-      local ensure_installed = {}
-      for _, linters in pairs(lint.linters_by_ft) do
-        for _, linter in ipairs(linters) do
-          table.insert(ensure_installed, linter)
-        end
-      end
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      -- Linter binaries are installed by the single
+      -- mason-tool-installer.setup() call in the LSP block above.
 
       -- Create autocommand which carries out the actual linting
       -- on the specified events.
@@ -1061,11 +1066,12 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    branch = 'main',
+    lazy = false, -- the rewrite doesn't support lazy-loading
     build = ':TSUpdate',
-    main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-    -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-    opts = {
-      ensure_installed = {
+    config = function()
+      local ts = require 'nvim-treesitter'
+      ts.install {
         'bash',
         'c',
         'diff',
@@ -1081,24 +1087,23 @@ require('lazy').setup({
         'sql',
         'vim',
         'vimdoc',
-      },
-      -- Autoinstall languages that are not installed
-      auto_install = true,
-      highlight = {
-        enable = true,
-        -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-        --  If you are experiencing weird indenting issues, add the language to
-        --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
-      },
-      indent = { enable = true, disable = { 'ruby' } },
-    },
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+      }
+      vim.api.nvim_create_autocmd('FileType', {
+        group = vim.api.nvim_create_augroup('treesitter-enable', {}),
+        callback = function(args)
+          local lang = vim.treesitter.language.get_lang(vim.bo[args.buf].filetype)
+          if not lang or not vim.tbl_contains(ts.get_available(), lang) then
+            return
+          end
+          ts.install(lang):await(function() -- auto_install equivalent
+            pcall(vim.treesitter.start, args.buf, lang)
+            if lang ~= 'ruby' then
+              vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+            end
+          end)
+        end,
+      })
+    end,
   },
   { -- Debugging
     'mfussenegger/nvim-dap',
@@ -1109,7 +1114,7 @@ require('lazy').setup({
       'williamboman/mason.nvim',
     },
     config = function()
-      dap = require 'dap'
+      local dap = require 'dap'
       local ui = require 'dapui'
       ui.setup()
       require('nvim-dap-virtual-text').setup()

@@ -15,14 +15,14 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 	fi
-	brew install bash kitty wget jq gh git tmux htop rsync perl
+	brew install bash kitty wget jq gh git tmux htop rsync perl tree-sitter-cli
 	fonts_install_dir="${HOME}/Library/Fonts"
 
 	# Setup deps for neovim source build.
 	brew install ninja cmake gettext curl
 elif [[ -f "/etc/debian_version" ]]; then
 	sudo apt update && sudo apt upgrade -y
-	sudo apt install git rsync tmux htop bash wget perl
+	sudo apt install git rsync tmux htop bash wget perl tree-sitter-cli
 	fonts_install_dir="${HOME}/.local/share/fonts"
 
 	# Setup deps for neovim source build.
@@ -198,3 +198,7 @@ fi
 if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
 	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
 fi
+
+##
+# Dump Python out using `uv`
+uv python install --default 3.13
