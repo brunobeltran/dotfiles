@@ -127,7 +127,9 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 --
 -- Use the "go up one directory" mapping from netrw to also open netrw.
 vim.keymap.set('n', '-', function()
-  vim.cmd 'Ex'
+  -- The netrw vendored into nvim 0.12+ opens the cwd when :Explore is given
+  -- no argument, so pass the current file's directory explicitly.
+  vim.cmd.Explore(vim.fn.expand '%:p:h')
 end, { desc = "Open current file's directory in NetRW (i.e., view folder contents)." })
 vim.keymap.set('x', '<leader>p', '"_dP', { desc = 'Paste without losing your copy buffer' })
 
