@@ -67,10 +67,10 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>', { desc = 'Remove highlights 
 local function _delete_trailing_whitespace()
   local save = vim.fn.winsaveview()
   local function _remove_line_trailing()
-    return vim.cmd [[silent %s/\s+$//e]]
+    return vim.cmd [[silent %s/\s\+$//e]]
   end
   local function _remove_file_trailing()
-    return vim.cmd [[silent %s#($\n\s*)+%$##]]
+    return vim.cmd [[silent %s#\($\n\s*\)\+\%$##e]]
   end
   pcall(_remove_line_trailing)
   pcall(_remove_file_trailing)
@@ -85,11 +85,17 @@ end
 vim.keymap.set('n', '<leader><CR>', _cleanup_save_and_clear, { desc = 'Cleanup whitespace, save, clear highlighting' })
 
 -- Diagnostic keymaps
+-- JumpOpts.float was deprecated in 0.12; on_jump is the replacement.
+local function _float_on_jump(diagnostic, _)
+  if diagnostic then
+    vim.diagnostic.open_float()
+  end
+end
 vim.keymap.set('n', '[d', function()
-  return vim.diagnostic.jump { count = -1, float = true }
+  return vim.diagnostic.jump { count = -1, on_jump = _float_on_jump }
 end, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', function()
-  return vim.diagnostic.jump { count = 1, float = true }
+  return vim.diagnostic.jump { count = 1, on_jump = _float_on_jump }
 end, { desc = 'Go to next [D]iagnostic message' })
 vim.keymap.set('n', '<leader>te', vim.diagnostic.open_float, { desc = '[T]oggle diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>tq', vim.diagnostic.setloclist, { desc = "[T]oggle [Q]uickfix 'location list'" })
@@ -179,7 +185,11 @@ end
 vim.keymap.set('n', '<leader>ttq', _toggle_ts_query, { desc = '[T]oggle [t]reesitter [q]uery preview' })
 
 -- Convenience for hard-to-do things.
-vim.keymap.set('n', '<leader>fll', ':set paste<CR>A  # NOQA: E501<ESC>:set nopaste<CR>', {
+-- Append the comment directly rather than typing it in insert mode, which
+-- needed the obsolete 'paste' option to defeat textwidth/autoindent.
+vim.keymap.set('n', '<leader>fll', function()
+  vim.api.nvim_set_current_line(vim.api.nvim_get_current_line() .. '  # NOQA: E501')
+end, {
   desc = '[F]ix [L]ine [L]ength error',
 })
 
@@ -807,7 +817,7 @@ require('lazy').setup({
           -- languages here or re-enable it for the disabled ones.
           local disable_filetypes = { c = true, cpp = true, python = true }
           local lsp_format_opt
-          if disable_filetypes[vim.b[bufnr].filetype] then
+          if disable_filetypes[vim.bo[bufnr].filetype] then
             lsp_format_opt = 'never'
           else
             lsp_format_opt = 'fallback'

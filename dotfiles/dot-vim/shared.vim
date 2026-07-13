@@ -140,8 +140,11 @@ endfunc
 nnoremap <leader><cr> <C-c>:noh<cr>:redraw!<cr>:call DeleteTrailingWS()<cr>:w<cr>:edit<cr>
 nnoremap <leader><leader><cr> <C-c>:noh<cr>:redraw!<cr>:%s/\t/    /g<cr>:w<cr>:edit<cr>
 
-" Toggle paste mode on and off
-map <leader>P :setlocal paste!<cr>
+" Toggle paste mode on and off. Only useful in plain Vim: Neovim handles
+" bracketed paste automatically and considers 'paste' obsolete.
+if !has('nvim')
+  map <leader>P :setlocal paste!<cr>
+endif
 
 " so tired of accidentally ending up in record mode
 nnoremap q: :q
