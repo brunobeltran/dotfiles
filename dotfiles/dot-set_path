@@ -27,7 +27,7 @@ paths_to_append+=(/opt/airwave/bin /Applications/Inkscape.app/Contents/MacOS)
 paths_to_prepend=("." "${HOME}/.bin" "${HOME}/bin" "${HOME}/.local/bin")
 
 # Highest non-local priority goes to our from-source builds.
-paths_to_prepend+=("${DOTFILES_BUILD_PATH}/neovim-build/bin" "${DOTFILES_BUILD_PATH}/fzf/bin")
+paths_to_prepend+=("${DOTFILES_BUILD_PATH}/neovim-build/bin" "${DOTFILES_BUILD_PATH}/fzf/bin" "${DOTFILES_BUILD_PATH}/tree-sitter-cli/bin")
 
 # Butterfly SDK's out-of-the-box setup uses pyenv
 paths_to_prepend+=("${HOME}/.pyenv/bin")

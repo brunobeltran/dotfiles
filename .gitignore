@@ -10,6 +10,7 @@ dotfiles/dot-config/dconf/
 dotfiles/dot-config/enchant/
 dotfiles/dot-config/evolution/
 dotfiles/dot-config/gcloud
+dotfiles/dot-config/gh
 dotfiles/dot-config/google-chrome
 dotfiles/dot-config/gtk-3.0/
 dotfiles/dot-config/htop
@@ -21,6 +22,7 @@ dotfiles/dot-config/nemo/
 dotfiles/dot-config/op/
 dotfiles/dot-config/pulse/
 dotfiles/dot-config/QtProject.conf
+dotfiles/dot-config/Slack/
 dotfiles/dot-config/sublime-text/
 dotfiles/dot-config/Unknown Organization/
 dotfiles/dot-config/user-dirs.dirs

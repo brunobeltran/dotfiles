@@ -10,6 +10,10 @@ BUILD_DIR="${SCRIPT_DIR}/build"
 mkdir -p "${BUILD_DIR}"
 
 ##
+# Render the current build path into a file for use in `.set_path`.
+echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
+
+##
 # Determine all configuration that is OS- or architecture-dependent.
 if [[ $OSTYPE == 'darwin'* ]]; then
 	if ! which brew >/dev/null 2>&1; then
@@ -17,6 +21,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	fi
 	brew install bash kitty wget jq gh git tmux htop rsync perl tree-sitter-cli
 	fonts_install_dir="${HOME}/Library/Fonts"
+	tree_sitter_platform="macos-arm64"
 
 	# Setup deps for neovim source build.
 	brew install ninja cmake gettext curl
@@ -24,9 +29,22 @@ elif [[ -f "/etc/debian_version" ]]; then
 	sudo apt update && sudo apt upgrade -y
 	sudo apt install git rsync tmux htop bash wget perl tree-sitter-cli
 	fonts_install_dir="${HOME}/.local/share/fonts"
+	tree_sitter_platform="linux-x64"
 
 	# Setup deps for neovim source build.
 	sudo apt install ninja-build gettext cmake unzip curl build-essential
+fi
+
+##
+# Download the `tree-sitter` CLI from its releases page directly, since package
+# managers notoriously have ancient versions of it.
+TREE_SITTER_DIR="${BUILD_DIR}/tree-sitter-cli"
+if [[ ! -f "${TREE_SITTER_DIR}/bin/tree-sitter" ]]; then
+	TREE_SITTER_ZIP="${BUILD_DIR}/tree-sitter-cli.zip"
+	wget -q "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-cli-${tree_sitter_platform}.zip" -O "${TREE_SITTER_ZIP}"
+	# `unzip -d` only creates a single directory level itself.
+	mkdir -p "${TREE_SITTER_DIR}/bin"
+	unzip "${TREE_SITTER_ZIP}" -d "${TREE_SITTER_DIR}/bin"
 fi
 
 ##
@@ -109,10 +127,6 @@ if [[ ! -f "${NEOVIM_BUILD_DIR}/bin/nvim" ]]; then
 		make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="${NEOVIM_BUILD_DIR}" install
 	}
 fi
-
-##
-# Render the current build path into a file for use in `.set_path`.
-echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
 # Manually "adopt" all folder-level config.
