@@ -209,13 +209,13 @@ export TMUX_PLUGIN_MANAGER_PATH="${HOME}/.tmux/plugins/"
 if [ ! -d "${TMUX_PLUGIN_MANAGER_PATH}/tpm" ]; then
 	git clone https://github.com/tmux-plugins/tpm "${TMUX_PLUGIN_MANAGER_PATH}/tpm"
 fi
-# `install_plugins` reads the plugin path from tmux's *global environment*
-# (`show-environment -g`), not the shell export above, so we must seed it into a
-# running server first. Running `tpm` itself also registers the key bindings and
-# resolves the path exactly as an interactive session would.
-tmux start-server
-tmux set-environment -g TMUX_PLUGIN_MANAGER_PATH "${TMUX_PLUGIN_MANAGER_PATH}"
-"${TMUX_PLUGIN_MANAGER_PATH}/tpm/tpm"
+# `install_plugins` reads the plugin path from tmux's *global environment*.
+# Keep `start-server` and `set-environment` in one tmux command sequence: an
+# empty server normally exits between separate invocations. This also updates
+# an already-running server, while a fresh server inherits the shell export.
+tmux start-server \; set-environment -g TMUX_PLUGIN_MANAGER_PATH "${TMUX_PLUGIN_MANAGER_PATH}"
+# `tpm/tpm` only initializes bindings and sources already-installed plugins;
+# this command actually downloads every `@plugin` listed in `.tmux.conf`.
 "${TMUX_PLUGIN_MANAGER_PATH}/tpm/bin/install_plugins"
 
 ##
