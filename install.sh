@@ -3,6 +3,28 @@
 set -euxo pipefail
 shopt -s nullglob
 
+_apt_install_if_needed() {
+	local package
+	local -a missing_packages=()
+
+	for package in "$@"; do
+		if ! dpkg-query --show --showformat='${Status}\n' -- "${package}" 2>/dev/null | grep -qx 'install ok installed'; then
+			missing_packages+=("${package}")
+		fi
+	done
+
+	((${#missing_packages[@]})) || return 0
+
+	if ! sudo -v; then
+		printf >&2 'Missing apt packages: %s\nAsk someone with sudo access to install them for you.\n' "${missing_packages[*]}"
+		return 0
+	fi
+
+	sudo apt update &&
+		sudo apt upgrade -y &&
+		sudo apt install -y -- "${missing_packages[@]}"
+}
+
 ##
 # Global constants.
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
@@ -26,13 +48,11 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 	# Setup deps for neovim source build.
 	brew install ninja cmake gettext curl
 elif [[ -f "/etc/debian_version" ]]; then
-	sudo apt update && sudo apt upgrade -y
-	sudo apt install git rsync tmux htop bash wget perl tree-sitter-cli
+	_apt_install_if_needed \
+		git rsync tmux htop bash wget perl tree-sitter-cli \
+		ninja-build gettext cmake unzip curl build-essential
 	fonts_install_dir="${HOME}/.local/share/fonts"
 	tree_sitter_platform="linux-x64"
-
-	# Setup deps for neovim source build.
-	sudo apt install ninja-build gettext cmake unzip curl build-essential
 fi
 
 ##
@@ -69,7 +89,7 @@ fi
 ##
 # Install a nice shell prompt.
 if ! which starship >/dev/null 2>&1; then
-	curl -sS https://starship.rs/install.sh | sudo sh
+	curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin
 fi
 
 ##
