@@ -161,8 +161,14 @@ for folder in dotfiles/*; do
 	[[ -d "${folder}" ]] || continue
 	real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
 	eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
+	# Keep links that already resolve to this Stow package. Remove foreign or
+	# broken links so they cannot trigger Stow's folder-level dotfile bug.
 	if [[ -L "${eventual_link_location}" ]]; then
-		rm "${eventual_link_location}"
+		expected_link_target="$(realpath "${folder}")"
+		actual_link_target="$(realpath "${eventual_link_location}" 2>/dev/null || true)"
+		if [[ "${actual_link_target}" != "${expected_link_target}" ]]; then
+			rm "${eventual_link_location}"
+		fi
 		continue
 	fi
 	if [[ -d "${eventual_link_location}" ]]; then
@@ -181,22 +187,19 @@ done
 ##
 # Validate install was clean
 #
-# If our dotfiles adoption led to any diff, we print an error message.
+# If our dotfiles adoption led to any diff, we print an error message. This
+# must remain read-only: `stow --adopt` can change files in this repository,
+# but the installer must not stage those changes for the user.
 {
 	cd "${SCRIPT_DIR}"
-	# First add to the tree to prevent new files from not showing up as a diff.
-	git add .
-	# Now update the index, to prevent "touch"ed files from showing as a diff
-	# even if there is no "real" diff.
-	git update-index --refresh
-	# With the above setup, this command will succeed only if there are no
-	# changes to our non-.gitignore'd files.
-	if ! git diff-index --quiet HEAD --; then
+	# Compare the worktree directly to HEAD. Do not use `git add` or
+	# `git update-index` here: validation must not mutate the index.
+	if ! git diff --quiet HEAD -- || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
 		echo "WARNING: -- Dotfiles installation not complete! --"
 		echo "WARNING: "
 		echo "WARNING: Some of your pre-existing files seem to have conflicted"
 		echo "WARNING: with this repo. Please check if this was intended. If not,"
-		echo "WARNING: a simple $(git checkout) should complete the install!"
+		echo "WARNING: restore the intended files manually before committing."
 	fi
 }
 
