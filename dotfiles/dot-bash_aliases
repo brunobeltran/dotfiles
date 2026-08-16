@@ -202,6 +202,14 @@ most_recent_commit_time() {
     date -j -f "%Y-%m-%dT%H:%M:%S%z" "${bsd_friendly_time}" +%s
 }
 
+# Print a seconds-since-epoch timestamp as a local "YYYY-MM-DD HH:MM:SS"
+# string. BSD-style `date -r <epoch>` (macOS) is tried first, then GNU-style
+# `date -d @<epoch>` (Linux, where `-r` instead means "mtime of file").
+epoch_to_human() {
+    date -r "$1" '+%Y-%m-%d %H:%M:%S' 2>/dev/null ||
+        date -d "@$1" '+%Y-%m-%d %H:%M:%S'
+}
+
 # Bootstrap a new worktree-friendly directory structure from a remote repo.
 # Usage: hgcreate <remote> [worktree_root_parent]
 #   remote: git remote URL (e.g., git@github.com:org/repo.git)
@@ -410,6 +418,142 @@ hgdelete() {
         _hgdelete "$@"
     )
     return $?
+}
+
+# List every worktree registered under the current worktree root along with
+# the branch *actually* checked out in it right now. In an `hgcreate`/`hgd`
+# layout the folder name and the branch name normally match, so rows where
+# they differ (e.g., you checked out some other branch in-place) get a
+# trailing `*`.
+hgls() {
+    _require_worktree_root || return
+    local worktree_root
+    worktree_root="$(print_worktree_root)"
+
+    local -a folders=()
+    local -a branches=()
+    local line
+    local path=""
+    local branch=""
+    local folder
+    local max_folder_len=0
+    while IFS= read -r line; do
+        case "${line}" in
+        worktree\ *)
+            path="${line#worktree }"
+            branch="(unknown)"
+            ;;
+        branch\ refs/heads/*)
+            branch="${line#branch refs/heads/}"
+            ;;
+        detached)
+            branch="(detached HEAD)"
+            ;;
+        bare)
+            # The bare repo backing the layout is not a real worktree.
+            path=""
+            ;;
+        "")
+            # A blank line terminates each `--porcelain` stanza.
+            if [[ -n "${path}" ]]; then
+                folder="${path#"${worktree_root}"/}"
+                folders+=("${folder}")
+                branches+=("${branch}")
+                if ((${#folder} > max_folder_len)); then
+                    max_folder_len="${#folder}"
+                fi
+            fi
+            path=""
+            ;;
+        esac
+    done < <(git -C "${worktree_root}" worktree list --porcelain)
+
+    local i
+    local marker
+    for i in "${!folders[@]}"; do
+        marker=""
+        if [[ "${folders[i]}" != "${branches[i]}" ]]; then
+            marker="  *"
+        fi
+        printf '%-*s  %s%s\n' \
+            "${max_folder_len}" "${folders[i]}" "${branches[i]}" "${marker}"
+    done
+}
+
+# Locate a branch in the worktree layout: prints the worktree that has `$1`
+# checked out right now, or---if none does---the worktree whose HEAD reflog
+# most recently moved to or away from it, i.e., where you last had it checked
+# out. Only the worktree path itself goes to stdout (explanations go to
+# stderr), so `cd "$(hgwhere my-branch)"` works.
+hgwhere() {
+    local branch_name="$1"
+    if [[ $# -lt 1 || -z "${branch_name}" ]]; then
+        echo "Usage: hgwhere <branch_name>" >&2
+        return 1
+    fi
+    _require_worktree_root || return
+    local worktree_root
+    worktree_root="$(print_worktree_root)"
+
+    local -a worktree_paths=()
+    local line
+    local path=""
+    while IFS= read -r line; do
+        case "${line}" in
+        worktree\ *)
+            path="${line#worktree }"
+            ;;
+        bare)
+            path=""
+            ;;
+        branch\ refs/heads/*)
+            if [[ "${line#branch refs/heads/}" == "${branch_name}" ]]; then
+                echo "'${branch_name}' is currently checked out in:" >&2
+                echo "${path}"
+                if [[ ! -d "${path}" ]]; then
+                    echo "WARNING: that directory no longer exists (stale worktree---try 'git worktree prune')." >&2
+                fi
+                return 0
+            fi
+            ;;
+        "")
+            if [[ -n "${path}" ]]; then
+                worktree_paths+=("${path}")
+            fi
+            path=""
+            ;;
+        esac
+    done < <(git -C "${worktree_root}" worktree list --porcelain)
+
+    local worktree_path
+    local last_seen
+    local best_time=0
+    local best_path=""
+    for worktree_path in "${worktree_paths[@]}"; do
+        # Reflog entries are newest-first, so the first `checkout:` entry that
+        # moved to or from the branch is this worktree's most recent contact
+        # with it. With `--date=unix`, `%gd` renders as `HEAD@{<epoch>}`.
+        last_seen="$(
+            git -C "${worktree_path}" log -g --date=unix --format='%gd %gs' HEAD 2>/dev/null |
+                awk -v branch="${branch_name}" '
+                    $2 == "checkout:" && ($5 == branch || $7 == branch) {
+                        gsub(/[^0-9]/, "", $1)
+                        print $1
+                        exit
+                    }'
+        )"
+        if [[ -n "${last_seen}" ]] && ((last_seen > best_time)); then
+            best_time="${last_seen}"
+            best_path="${worktree_path}"
+        fi
+    done
+
+    if [[ -z "${best_path}" ]]; then
+        echo "'${branch_name}' is not checked out in any worktree, and no worktree's reflog remembers checking it out." >&2
+        return 1
+    fi
+    echo "'${branch_name}' was last checked out around $(epoch_to_human "${best_time}") in:" >&2
+    echo "${best_path}"
 }
 
 # Extract a .deb into a single folder named after the deb (sans extension),
