@@ -4,25 +4,25 @@ set -euxo pipefail
 shopt -s nullglob
 
 _apt_install_if_needed() {
-	local package
-	local -a missing_packages=()
+    local package
+    local -a missing_packages=()
 
-	for package in "$@"; do
-		if ! dpkg-query --show --showformat='${Status}\n' -- "${package}" 2>/dev/null | grep -qx 'install ok installed'; then
-			missing_packages+=("${package}")
-		fi
-	done
+    for package in "$@"; do
+        if ! dpkg-query --show --showformat='${Status}\n' -- "${package}" 2>/dev/null | grep -qx 'install ok installed'; then
+            missing_packages+=("${package}")
+        fi
+    done
 
-	((${#missing_packages[@]})) || return 0
+    ((${#missing_packages[@]})) || return 0
 
-	if ! sudo -v; then
-		printf >&2 'Missing apt packages: %s\nAsk someone with sudo access to install them for you.\n' "${missing_packages[*]}"
-		return 0
-	fi
+    if ! sudo -v; then
+        printf >&2 'Missing apt packages: %s\nAsk someone with sudo access to install them for you.\n' "${missing_packages[*]}"
+        return 0
+    fi
 
-	sudo apt update &&
-		sudo apt upgrade -y &&
-		sudo apt install -y -- "${missing_packages[@]}"
+    sudo apt update &&
+        sudo apt upgrade -y &&
+        sudo apt install -y -- "${missing_packages[@]}"
 }
 
 ##
@@ -37,22 +37,31 @@ echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
 # Determine all configuration that is OS- or architecture-dependent.
+SKIP_COMPILING_REASON=  # empty if it's okay to compile stuff here
 if [[ $OSTYPE == 'darwin'* ]]; then
-	if ! which brew >/dev/null 2>&1; then
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-	fi
-	brew install bash kitty wget jq gh git tmux htop rsync perl tree-sitter-cli
-	fonts_install_dir="${HOME}/Library/Fonts"
-	tree_sitter_platform="macos-arm64"
+    if [[ $(sysctl -n machdep.cpu.brand_string) == *"A18"* ]]; then
+        SKIP_COMPILING_REASON="mac neo arch not typically supported"
+    fi
+    if ! which brew >/dev/null 2>&1; then
+        if [[ ! -f /opt/homebrew/bin/brew ]]; then
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        fi
+        # gnubin needs to be explicitly included to get (e.g.) GNU's realpath on
+        # Mac from `brew install coreutils`.
+        export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
+    fi
+    brew install bash coreutils kitty wget jq gh git tmux htop rsync perl tree-sitter-cli
+    fonts_install_dir="${HOME}/Library/Fonts"
+    tree_sitter_platform="macos-arm64"
 
-	# Setup deps for neovim source build.
-	brew install ninja cmake gettext curl
+    # Setup deps for neovim source build.
+    brew install ninja cmake gettext curl
 elif [[ -f "/etc/debian_version" ]]; then
-	_apt_install_if_needed \
-		git rsync tmux htop bash wget perl tree-sitter-cli \
-		ninja-build gettext cmake unzip curl build-essential
-	fonts_install_dir="${HOME}/.local/share/fonts"
-	tree_sitter_platform="linux-x64"
+    _apt_install_if_needed \
+        git rsync tmux htop bash wget perl tree-sitter-cli \
+        ninja-build gettext cmake unzip curl build-essential
+    fonts_install_dir="${HOME}/.local/share/fonts"
+    tree_sitter_platform="linux-x64"
 fi
 
 ##
@@ -60,36 +69,36 @@ fi
 # managers notoriously have ancient versions of it.
 TREE_SITTER_DIR="${BUILD_DIR}/tree-sitter-cli"
 if [[ ! -f "${TREE_SITTER_DIR}/bin/tree-sitter" ]]; then
-	TREE_SITTER_ZIP="${BUILD_DIR}/tree-sitter-cli.zip"
-	wget -q "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-cli-${tree_sitter_platform}.zip" -O "${TREE_SITTER_ZIP}"
-	# `unzip -d` only creates a single directory level itself.
-	mkdir -p "${TREE_SITTER_DIR}/bin"
-	unzip "${TREE_SITTER_ZIP}" -d "${TREE_SITTER_DIR}/bin"
+    TREE_SITTER_ZIP="${BUILD_DIR}/tree-sitter-cli.zip"
+    wget -q "https://github.com/tree-sitter/tree-sitter/releases/latest/download/tree-sitter-cli-${tree_sitter_platform}.zip" -O "${TREE_SITTER_ZIP}"
+    # `unzip -d` only creates a single directory level itself.
+    mkdir -p "${TREE_SITTER_DIR}/bin"
+    unzip "${TREE_SITTER_ZIP}" -d "${TREE_SITTER_DIR}/bin"
 fi
 
 ##
 # Python via `uv`
 if ! which uv >/dev/null 2>&1; then
-	curl -LsSf https://astral.sh/uv/install.sh | sh
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
 ##
 # Many distros come with ancient fzf, install from source.
 FZF_DIR="${BUILD_DIR}/fzf"
 if [[ ! -d "${FZF_DIR}" ]]; then
-	git clone --depth 1 https://github.com/junegunn/fzf.git "${FZF_DIR}"
+    git clone --depth 1 https://github.com/junegunn/fzf.git "${FZF_DIR}"
 fi
 # FZF comes with a very noisy install script that dumps stuff all over the
 # place, but one thing we can always be sure of is that once it is run, it will
 # download or build an FZF binary to this path.
 if [[ ! -f "${FZF_DIR}/bin/fzf" ]]; then
-	"${FZF_DIR}/install" --no-update-rc --key-bindings --completion --xdg
+    "${FZF_DIR}/install" --no-update-rc --key-bindings --completion --xdg
 fi
 
 ##
 # Install a nice shell prompt.
 if ! which starship >/dev/null 2>&1; then
-	curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin
+    curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin
 fi
 
 ##
@@ -114,22 +123,22 @@ STOW_VERSION=2.4.1
 STOW_DIR="${BUILD_DIR}/stow-${STOW_VERSION}"
 STOW="${STOW_DIR}/bin/stow"
 if [[ ! -x "${STOW}" ]]; then
-	STOW_TARBALL="${BUILD_DIR}/stow-${STOW_VERSION}.tar.gz"
-	wget -q "https://github.com/aspiers/stow/archive/refs/tags/v${STOW_VERSION}.tar.gz" -O "${STOW_TARBALL}"
-	rm -rf "${STOW_DIR}"
-	mkdir -p "${STOW_DIR}"
-	tar xzf "${STOW_TARBALL}" -C "${STOW_DIR}" --strip-components=1
-	stow_perl="$(command -v perl)"
-	stow_render() {
-		sed -e "s|@PERL@|${stow_perl}|g" \
-			-e "s|@VERSION@|${STOW_VERSION}|g" \
-			-e "s|@USE_LIB_PMDIR@|use lib \"${STOW_DIR}/lib\";|g" \
-			"$1" >"$2"
-	}
-	stow_render "${STOW_DIR}/bin/stow.in" "${STOW_DIR}/bin/stow"
-	stow_render "${STOW_DIR}/lib/Stow.pm.in" "${STOW_DIR}/lib/Stow.pm"
-	stow_render "${STOW_DIR}/lib/Stow/Util.pm.in" "${STOW_DIR}/lib/Stow/Util.pm"
-	chmod +x "${STOW_DIR}/bin/stow"
+    STOW_TARBALL="${BUILD_DIR}/stow-${STOW_VERSION}.tar.gz"
+    wget -q "https://github.com/aspiers/stow/archive/refs/tags/v${STOW_VERSION}.tar.gz" -O "${STOW_TARBALL}"
+    rm -rf "${STOW_DIR}"
+    mkdir -p "${STOW_DIR}"
+    tar xzf "${STOW_TARBALL}" -C "${STOW_DIR}" --strip-components=1
+    stow_perl="$(command -v perl)"
+    stow_render() {
+        sed -e "s|@PERL@|${stow_perl}|g" \
+            -e "s|@VERSION@|${STOW_VERSION}|g" \
+            -e "s|@USE_LIB_PMDIR@|use lib \"${STOW_DIR}/lib\";|g" \
+            "$1" >"$2"
+    }
+    stow_render "${STOW_DIR}/bin/stow.in" "${STOW_DIR}/bin/stow"
+    stow_render "${STOW_DIR}/lib/Stow.pm.in" "${STOW_DIR}/lib/Stow.pm"
+    stow_render "${STOW_DIR}/lib/Stow/Util.pm.in" "${STOW_DIR}/lib/Stow/Util.pm"
+    chmod +x "${STOW_DIR}/bin/stow"
 fi
 
 ##
@@ -137,15 +146,15 @@ fi
 NEOVIM_SOURCE_DIR="${BUILD_DIR}/neovim-src"
 NEOVIM_BUILD_DIR="${BUILD_DIR}/neovim-build"
 if [[ ! -d "${NEOVIM_SOURCE_DIR}" ]]; then
-	git clone https://github.com/neovim/neovim.git "${NEOVIM_SOURCE_DIR}"
+    git clone https://github.com/neovim/neovim.git "${NEOVIM_SOURCE_DIR}"
 fi
-if [[ ! -f "${NEOVIM_BUILD_DIR}/bin/nvim" ]]; then
-	{
-		cd "${NEOVIM_SOURCE_DIR}"
-		mkdir -p "${NEOVIM_BUILD_DIR}"
-		make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="${NEOVIM_BUILD_DIR}"
-		make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="${NEOVIM_BUILD_DIR}" install
-	}
+if [[ ! -f "${NEOVIM_BUILD_DIR}/bin/nvim" && -z "${SKIP_COMPILING_REASON}" ]]; then
+    {
+        cd "${NEOVIM_SOURCE_DIR}"
+        mkdir -p "${NEOVIM_BUILD_DIR}"
+        make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="${NEOVIM_BUILD_DIR}"
+        make CMAKE_BUILD_TYPE=Release CMAKE_INSTALL_PREFIX="${NEOVIM_BUILD_DIR}" install
+    }
 fi
 
 ##
@@ -158,26 +167,26 @@ fi
 #
 # https://github.com/aspiers/stow/issues/19
 for folder in dotfiles/*; do
-	[[ -d "${folder}" ]] || continue
-	real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
-	eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
-	# Keep links that already resolve to this Stow package. Remove foreign or
-	# broken links so they cannot trigger Stow's folder-level dotfile bug.
-	if [[ -L "${eventual_link_location}" ]]; then
-		expected_link_target="$(realpath "${folder}")"
-		actual_link_target="$(realpath "${eventual_link_location}" 2>/dev/null || true)"
-		if [[ "${actual_link_target}" != "${expected_link_target}" ]]; then
-			rm "${eventual_link_location}"
-		fi
-		continue
-	fi
-	if [[ -d "${eventual_link_location}" ]]; then
-		cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
-		rm -rf "${folder}"
-		cp -r "${eventual_link_location}.bak" "${folder}"
-		rm -rf "${eventual_link_location}"
-		ln -s "${real_folder_path}" "${eventual_link_location}"
-	fi
+    [[ -d "${folder}" ]] || continue
+    real_folder_path="$(realpath --relative-to="${HOME}" "${folder}")"
+    eventual_link_location="${HOME}/.${folder#dotfiles/dot-}"
+    # Keep links that already resolve to this Stow package. Remove foreign or
+    # broken links so they cannot trigger Stow's folder-level dotfile bug.
+    if [[ -L "${eventual_link_location}" ]]; then
+        expected_link_target="$(realpath "${folder}")"
+        actual_link_target="$(realpath "${eventual_link_location}" 2>/dev/null || true)"
+        if [[ "${actual_link_target}" != "${expected_link_target}" ]]; then
+            rm "${eventual_link_location}"
+        fi
+        continue
+    fi
+    if [[ -d "${eventual_link_location}" ]]; then
+        cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
+        rm -rf "${folder}"
+        cp -r "${eventual_link_location}.bak" "${folder}"
+        rm -rf "${eventual_link_location}"
+        ln -s "${real_folder_path}" "${eventual_link_location}"
+    fi
 done
 
 ##
@@ -191,16 +200,16 @@ done
 # must remain read-only: `stow --adopt` can change files in this repository,
 # but the installer must not stage those changes for the user.
 {
-	cd "${SCRIPT_DIR}"
-	# Compare the worktree directly to HEAD. Do not use `git add` or
-	# `git update-index` here: validation must not mutate the index.
-	if ! git diff --quiet HEAD -- || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
-		echo "WARNING: -- Dotfiles installation not complete! --"
-		echo "WARNING: "
-		echo "WARNING: Some of your pre-existing files seem to have conflicted"
-		echo "WARNING: with this repo. Please check if this was intended. If not,"
-		echo "WARNING: restore the intended files manually before committing."
-	fi
+    cd "${SCRIPT_DIR}"
+    # Compare the worktree directly to HEAD. Do not use `git add` or
+    # `git update-index` here: validation must not mutate the index.
+    if ! git diff --quiet HEAD -- || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+        echo "WARNING: -- Dotfiles installation not complete! --"
+        echo "WARNING: "
+        echo "WARNING: Some of your pre-existing files seem to have conflicted"
+        echo "WARNING: with this repo. Please check if this was intended. If not,"
+        echo "WARNING: restore the intended files manually before committing."
+    fi
 }
 
 ### Post-install
@@ -210,7 +219,7 @@ done
 # it.
 export TMUX_PLUGIN_MANAGER_PATH="${HOME}/.tmux/plugins/"
 if [ ! -d "${TMUX_PLUGIN_MANAGER_PATH}/tpm" ]; then
-	git clone https://github.com/tmux-plugins/tpm "${TMUX_PLUGIN_MANAGER_PATH}/tpm"
+    git clone https://github.com/tmux-plugins/tpm "${TMUX_PLUGIN_MANAGER_PATH}/tpm"
 fi
 # `install_plugins` reads the plugin path from tmux's *global environment*.
 # Keep `start-server` and `set-environment` in one tmux command sequence: an
@@ -227,15 +236,15 @@ FONTS_DIR="${BUILD_DIR}/fonts"
 mkdir -p "${FONTS_DIR}"
 mkdir -p "${fonts_install_dir}"
 if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
-	wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
-	unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
+    wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/UbuntuMono.zip -O "${BUILD_DIR}/UbuntuMono.zip"
+    unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
 fi
 "${STOW}" --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
 # Validate fonts installation worked...it is very flaky/annoying on OS X.
 if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
-	echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
+    echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
 fi
 
 ##
 # Dump Python out using `uv`
-uv python install --default 3.13
+${HOME}/.local/bin/uv python install --default 3.13
