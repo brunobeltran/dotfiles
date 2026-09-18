@@ -1,4 +1,25 @@
 #!/bin/bash
+#
+# Bootstrap installation of requirements for my dotfiles.
+#
+# Everything from package-manager "always want"s to fonts to bespoke installers
+# like `starship` and `uv` through things we want to always compile from source
+# (e.g., `nvim`), through things that require multi-step setup (e.g. `tmux`
+# plugins).
+#
+# Note to agents: various standards should always be followed here:
+# - Use `${BUILD_DIR}` to create "SOURCE" and "BUILD" directories for any code
+#   that needs compilation, then add it to `dotfiles/dot-set_path` using
+#   `DOTFILES_BUILD_PATH` as appropriate.
+# - For bespoke installers, always install them in "user" mode (not system-wide)
+#   even if that requires quite some deep customization, so that this script
+#   continues to work on remote machines where we don't have `sudo`.
+# - Make _all steps_ idempotent so that we don't repeat install steps while
+#   debugging on a new computer.
+# - Instruct bespoke installers to output to `~/.local/bin` if possible, and
+#   check for the existence of executables we own using their full expected path
+#   instead of using `command -v` (no `which`) so that our idempotency checks
+#   work even if we don't reach the actual "dotfiles" step.
 
 set -euxo pipefail
 shopt -s nullglob
@@ -37,7 +58,7 @@ echo "${BUILD_DIR}" >"${SCRIPT_DIR}/dotfiles/dot-dotfiles-build-path"
 
 ##
 # Determine all configuration that is OS- or architecture-dependent.
-SKIP_COMPILING_REASON=  # empty if it's okay to compile stuff here
+SKIP_COMPILING_REASON= # empty if it's okay to compile stuff here
 if [[ $OSTYPE == 'darwin'* ]]; then
     if [[ $(sysctl -n machdep.cpu.brand_string) == *"A18"* ]]; then
         SKIP_COMPILING_REASON="mac neo arch not typically supported"
@@ -78,7 +99,7 @@ fi
 
 ##
 # Python via `uv`
-if ! which uv >/dev/null 2>&1; then
+if [[ ! -f "${HOME}/.local/bin/uv" ]]; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
@@ -97,8 +118,8 @@ fi
 
 ##
 # Install a nice shell prompt.
-if ! which starship >/dev/null 2>&1; then
-    curl -sS https://starship.rs/install.sh | sh -s -- -b ~/.local/bin
+if [[ ! -f "${HOME}/.local/bin/starship" ]]; then
+    curl -sS https://starship.rs/install.sh | sh -s -- -b "${HOME}/.local/bin"
 fi
 
 ##
@@ -246,5 +267,5 @@ if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
 fi
 
 ##
-# Dump Python out using `uv`
+# Dump a reasonable Python version out using `uv` so it's available by default.
 ${HOME}/.local/bin/uv python install --default 3.13
