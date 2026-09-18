@@ -20,6 +20,7 @@
 #   check for the existence of executables we own using their full expected path
 #   instead of using `command -v` (no `which`) so that our idempotency checks
 #   work even if we don't reach the actual "dotfiles" step.
+# - Use "${HOME}" not `~`.
 
 set -euxo pipefail
 shopt -s nullglob
@@ -71,7 +72,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
         # Mac from `brew install coreutils`.
         export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
     fi
-    brew install bash coreutils kitty wget jq gh git tmux htop rsync perl tree-sitter-cli
+    brew install bash coreutils kitty wget jq gh git tmux htop rsync perl
     fonts_install_dir="${HOME}/Library/Fonts"
     tree_sitter_platform="macos-arm64"
 
@@ -79,7 +80,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     brew install ninja cmake gettext curl
 elif [[ -f "/etc/debian_version" ]]; then
     _apt_install_if_needed \
-        git rsync tmux htop bash wget perl tree-sitter-cli \
+        git rsync tmux htop bash wget perl \
         ninja-build gettext cmake unzip curl build-essential
     fonts_install_dir="${HOME}/.local/share/fonts"
     tree_sitter_platform="linux-x64"
