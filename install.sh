@@ -100,6 +100,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     brew install --cask tailscale-app twingate
     fonts_install_dir="${HOME}/Library/Fonts"
     tree_sitter_platform="macos-arm64"
+    mkdir -p "${HOME}/.local/bin" && ln -s /opt/homebrew/bin/bash "${HOME}/.local/bin/bash"
 
     # Setup deps for neovim source build.
     brew install ninja cmake gettext curl
@@ -125,6 +126,7 @@ elif [[ -f "/etc/debian_version" ]]; then
     fi
     fonts_install_dir="${HOME}/.local/share/fonts"
     tree_sitter_platform="linux-x64"
+    mkdir -p "${HOME}/.local/bin" && ln -s /bin/bash "${HOME}/.local/bin/bash"
 fi
 
 ##
