@@ -269,9 +269,18 @@ hgcreate() {
         return 3
     fi
 
-    # Create the first worktree for the default branch.
+    # Create the first worktree for the default branch. A freshly-created
+    # remote has no commits, so `HEAD` points at a branch whose ref does not
+    # exist yet; in that case make an orphan worktree (needs git >=2.42 for
+    # `worktree add --orphan`), which leaves the branch unborn exactly like a
+    # `git init` would.
     echo "Creating worktree for '${default_branch}'..."
-    if ! git -C "${bare_repo}" worktree add "${worktree_root}/${default_branch}" "${default_branch}"; then
+    local -a worktree_add_args=("${worktree_root}/${default_branch}" "${default_branch}")
+    if ! git -C "${bare_repo}" show-ref --verify --quiet "refs/heads/${default_branch}"; then
+        echo "Remote is empty; creating '${default_branch}' with no commits."
+        worktree_add_args=(--orphan -b "${default_branch}" "${worktree_root}/${default_branch}")
+    fi
+    if ! git -C "${bare_repo}" worktree add "${worktree_add_args[@]}"; then
         echo "Failed to create worktree for '${default_branch}'." >&2
         return 4
     fi
