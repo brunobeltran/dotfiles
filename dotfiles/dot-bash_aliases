@@ -276,6 +276,11 @@ hgcreate() {
         return 4
     fi
 
+    if ! git -C "${bare_repo}" branch --set-upstream-to="origin/${default_branch}" "${default_branch}"; then
+        echo "Failed to automatically set 'origin' as the 'upstream' remote for '${default_branch}'."
+        return 5
+    fi
+
     echo "Done! Worktree root: ${worktree_root}"
     echo "Default branch worktree: ${worktree_root}/${default_branch}"
 }
