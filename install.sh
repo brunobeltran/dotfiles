@@ -47,11 +47,32 @@ _apt_install_if_needed() {
         sudo apt install -y -- "${missing_packages[@]}"
 }
 
+# Usage: _warn_loudly <line>...
+# Print each line as a very visible warning, then pause for
+# `${LONG_ENOUGH_TO_READ}` seconds so it cannot scroll past unseen. Never fails,
+# so it is safe as the right-hand side of `||` for steps that must not abort
+# the rest of the install.
+_warn_loudly() {
+    local line
+    {
+        echo
+        echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        for line in "$@"; do
+            echo "!!! WARNING: ${line}"
+        done
+        echo '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+        echo
+    } >&2
+    sleep "${LONG_ENOUGH_TO_READ}"
+}
+
 ##
 # Global constants.
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BUILD_DIR="${SCRIPT_DIR}/build"
 mkdir -p "${BUILD_DIR}"
+# Seconds to pause after a loud warning so it actually sinks in.
+LONG_ENOUGH_TO_READ=15
 
 ##
 # Render the current build path into a file for use in `.set_path`.
@@ -73,6 +94,10 @@ if [[ $OSTYPE == 'darwin'* ]]; then
         export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
     fi
     brew install bash coreutils kitty wget jq gh git tmux htop rsync perl
+    # VPN clients. Both casks are the vendors' own standalone .pkg installers
+    # (upstream discourages or no longer supports the App Store builds), so
+    # brew will prompt for a password to run them.
+    brew install --cask tailscale-app twingate
     fonts_install_dir="${HOME}/Library/Fonts"
     tree_sitter_platform="macos-arm64"
 
@@ -82,6 +107,22 @@ elif [[ -f "/etc/debian_version" ]]; then
     _apt_install_if_needed \
         git rsync tmux htop bash wget perl \
         ninja-build gettext cmake unzip curl build-essential
+
+    ##
+    # VPN clients. Both need a root daemon, so there is no user-mode install;
+    # use each vendor's own one-liner, which sets up its apt repo and needs
+    # sudo. A failure here (no sudo, no network, vendor script moved) must not
+    # take the rest of the install down with it: warn loudly and carry on.
+    if [[ ! -f /usr/bin/tailscale ]]; then
+        (curl -fsSL https://tailscale.com/install.sh | sh) ||
+            _warn_loudly "Tailscale failed to install; continuing without it." \
+                "Retry by hand: curl -fsSL https://tailscale.com/install.sh | sh"
+    fi
+    if [[ ! -f /usr/bin/twingate ]]; then
+        (curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash) ||
+            _warn_loudly "Twingate failed to install; continuing without it." \
+                "Retry by hand: curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash"
+    fi
     fonts_install_dir="${HOME}/.local/share/fonts"
     tree_sitter_platform="linux-x64"
 fi
