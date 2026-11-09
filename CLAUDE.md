@@ -39,6 +39,23 @@ later ones as alternatives.
 6. **Idempotency via full paths.** Gate each step on the exact file the install
    is expected to produce (`/usr/bin/foo`, `${HOME}/.local/bin/foo`,
    `/Applications/Foo.app`), never `command -v`.
+7. **Environment setup runs unconditionally; only the install it enables is
+   gated.** Anything a later step depends on (`export PATH=...` to pick up
+   brew or GNU coreutils, `source`-ing an env file, setting a variable) must
+   execute on every run, outside any idempotency `if`. Only the install that
+   produces the gated file goes inside the `if`. A guard around the setup
+   means a rerun on an already-bootstrapped machine silently runs with the
+   wrong tools.
+8. **Never assume GNU tools on macOS.** `/usr/bin` has BSD `realpath`, `sed`,
+   `stat`, etc. with different flags. Any step that needs GNU flags must run
+   after the gnubin `PATH` export in the darwin branch, and a flag that only
+   GNU supports is a hint to check which binary will actually be found.
+9. **The repo is the source of truth; `install.sh` never deletes or overwrites
+   anything under `dotfiles/`.** Adopting a pre-existing live directory means
+   moving it aside and pulling *missing* entries into the repo folder, never
+   `rm -rf` of the repo folder or copying the live tree over it. Remember the
+   live tree is usually full of symlinks back into the repo from an earlier
+   run; copying those over the real files destroys the tracked content.
 
 Steps that can only ever be done by a human (browser logins, `tailscale up`,
 `twingate setup`, approving a macOS system extension) are left out of the

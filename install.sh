@@ -85,28 +85,44 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     if [[ $(sysctl -n machdep.cpu.brand_string) == *"A18"* ]]; then
         SKIP_COMPILING_REASON="mac neo arch not typically supported"
     fi
-    if ! which brew >/dev/null 2>&1; then
-        if [[ ! -f /opt/homebrew/bin/brew ]]; then
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        fi
-        # gnubin needs to be explicitly included to get (e.g.) GNU's realpath on
-        # Mac from `brew install coreutils`.
-        export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
+    if [[ ! -f /opt/homebrew/bin/brew ]]; then
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
+    # Always put brew and GNU coreutils first on PATH, regardless of whether
+    # brew was just installed or was already there: the stow loop below needs
+    # GNU realpath (--relative-to), and the BSD one in /usr/bin has no such
+    # flag. This must not be gated on "brew was missing", or a rerun on an
+    # already-bootstrapped machine silently gets the BSD tools.
+    export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
     brew install bash coreutils kitty wget jq gh git tmux htop rsync perl
     # VPN clients. Both casks are the vendors' own standalone .pkg installers
     # (upstream discourages or no longer supports the App Store builds), so
-    # brew will prompt for a password to run them.
-    brew install --cask tailscale-app twingate
+    # brew will prompt for a password to run them. Gate on the .app each pkg
+    # produces: brew does not know about a copy installed outside of brew and
+    # would otherwise re-run the pkg (which fails as an "upgrade" over the
+    # running app). Neither is essential, so a failure warns and carries on.
+    if [[ ! -d /Applications/Tailscale.app ]]; then
+        (brew install --cask tailscale-app) ||
+            _warn_loudly "Tailscale failed to install; continuing without it." \
+                "Retry by hand: brew install --cask tailscale-app"
+    fi
+    if [[ ! -d /Applications/Twingate.app ]]; then
+        (brew install --cask twingate) ||
+            _warn_loudly "Twingate failed to install; continuing without it." \
+                "Retry by hand: brew install --cask twingate"
+    fi
     fonts_install_dir="${HOME}/Library/Fonts"
     tree_sitter_platform="macos-arm64"
-    mkdir -p "${HOME}/.local/bin" && ln -s /opt/homebrew/bin/bash "${HOME}/.local/bin/bash"
+    mkdir -p "${HOME}/.local/bin"
+    if [[ ! -e "${HOME}/.local/bin/bash" ]]; then
+        ln -s /opt/homebrew/bin/bash "${HOME}/.local/bin/bash"
+    fi
 
     # Setup deps for neovim source build.
     brew install ninja cmake gettext curl
 elif [[ -f "/etc/debian_version" ]]; then
     _apt_install_if_needed \
-        git rsync tmux htop bash wget perl \
+        git rsync tmux htop bash wget perl fontconfig \
         ninja-build gettext cmake unzip curl build-essential
 
     ##
@@ -246,10 +262,28 @@ for folder in dotfiles/*; do
         continue
     fi
     if [[ -d "${eventual_link_location}" ]]; then
-        cp -r "${eventual_link_location}" "${eventual_link_location}.bak"
-        rm -rf "${folder}"
-        cp -r "${eventual_link_location}.bak" "${folder}"
-        rm -rf "${eventual_link_location}"
+        # Adopt a pre-existing real directory: move it aside, then pull into the
+        # repo folder anything it had that the repo lacks. The repo folder is
+        # the source of truth and is never deleted or overwritten here. On a
+        # machine that was stowed before, the live dir is mostly symlinks back
+        # into the repo; copying those over the real files (as this loop once
+        # did) leaves only dangling self-references and a working tree full of
+        # deletions.
+        backup="${eventual_link_location}.bak.$(date +%Y%m%d%H%M%S)"
+        abs_folder="$(realpath "${folder}")"
+        mv "${eventual_link_location}" "${backup}"
+        for entry in "${backup}"/* "${backup}"/.[!.]*; do
+            name="$(basename "${entry}")"
+            # Skip links that already point into this repo folder.
+            if [[ -L "${entry}" ]] &&
+                [[ "$(realpath "${entry}" 2>/dev/null || true)" == "${abs_folder}"/* ]]; then
+                continue
+            fi
+            if [[ ! -e "${folder}/${name}" && ! -L "${folder}/${name}" ]]; then
+                mv "${entry}" "${folder}/${name}"
+            fi
+        done
+        echo "Adopted ${eventual_link_location} into ${folder}; the original is at ${backup}"
         ln -s "${real_folder_path}" "${eventual_link_location}"
     fi
 done
@@ -305,9 +339,14 @@ if [[ ! -f "${FONTS_DIR}/UbuntuMonoNerdFont-Regular.ttf" ]]; then
     unzip "${BUILD_DIR}/UbuntuMono.zip" -d "${FONTS_DIR}"
 fi
 "${STOW}" --target="${fonts_install_dir}" --dir "${BUILD_DIR}" fonts
-# Validate fonts installation worked...it is very flaky/annoying on OS X.
-if ! fc-list | grep UbuntuMono >/dev/null 2>&1; then
-    echo "WARNING: Fonts placed into correct directory but fc-list not seeing them, if you are on a Mac you need to manually click on each of the corresponding font files!"
+# Validate the fonts are visible. `fc-list` is fontconfig, a Linux thing: macOS
+# does not ship it and CoreText picks up ~/Library/Fonts on its own, so only
+# check where fontconfig is actually installed (the Debian branch installs it).
+if [[ -f /usr/bin/fc-list ]]; then
+    if ! /usr/bin/fc-list | grep UbuntuMono >/dev/null 2>&1; then
+        _warn_loudly "Fonts were stowed into ${fonts_install_dir} but fc-list does not see them." \
+            "Retry by hand: fc-cache -fv && fc-list | grep UbuntuMono"
+    fi
 fi
 
 ##
