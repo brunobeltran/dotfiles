@@ -258,6 +258,22 @@ require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   'tpope/vim-fugitive', -- Git integration, old school
+  { -- GitHub (PRs, issues, CI logs, notifications) via the `gh` CLI.
+    -- No setup(); plugin/guh.lua registers `:Guh`, `<Plug>(guh-…)` keys, and
+    -- a BufReadCmd for `guh://` URIs, so it is loaded eagerly (it's tiny).
+    -- Inside any `guh://` buffer, `g?` lists the buffer-local maps (dd=diff,
+    -- cR=review, cM=merge, cc=comment, -=up, gX=open on github.com, …).
+    -- Requires nvim 0.13+ and `gh` (installed by install.sh).
+    'justinmk/guh.nvim',
+    lazy = false,
+    keys = {
+      { '<leader>GHs', '<cmd>Guh<CR>', desc = '[G]it Git[H]ub [s]tatus (repo commits/PRs/issues)' },
+      { '<leader>GHn', '<cmd>Guh guh://status<CR>', desc = '[G]it Git[H]ub [n]otifications' },
+      { '<leader>GHo', '<cmd>Guh .<CR>', desc = '[G]it Git[H]ub [o]pen PR/issue/SHA/URL under cursor' },
+      -- Leaves the cmdline open so a PR number, URL, or owner/repo slug can be typed.
+      { '<leader>GHp', ':Guh ', desc = '[G]it Git[H]ub [p]ick a PR/issue/URL to view' },
+    },
+  },
   'mbbill/undotree', -- Visualize Vim's "Undotree"
 
   -- NOTE: Plugins can also be added by using a table,
@@ -403,6 +419,8 @@ require('lazy').setup({
       -- Document existing key chains
       spec = {
         { '<leader>G', group = '[G]it' },
+        { '<leader>Gh', group = '[G]it [h]unk' },
+        { '<leader>GH', group = '[G]it Git[H]ub (guh.nvim)' },
         { '<leader>b', group = '[b]uffer' },
         { '<leader>f', group = '[f]ix' },
         { '<leader>fl', group = '[f]ix [l]ine error via NOQA' },
