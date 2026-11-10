@@ -656,7 +656,7 @@ alias claude-quick='claude --model haiku --effort low'
 # events, which (unlike CGWarpMouseCursorPosition) reset the system idle timer.
 # Runs in the foreground; Ctrl-C to stop. See also the built-in `caffeinate -d`
 # for a nudge-free alternative.
-jiggle() {
+_mac_jiggle() {
     local interval="${1:-15}"
     echo "Nudging mouse every ${interval}s to keep the display awake (Ctrl-C to stop)..."
     while true; do
@@ -672,4 +672,16 @@ jiggle() {
         '
         sleep "${interval}"
     done
+}
+
+_linux_jiggle() {
+    systemd-inhibit --what=sleep:idle --why="Jiggle jiggle" sleep infinity
+}
+
+jiggle() {
+    if [[ $OSTYPE == 'darwin'* ]]; then
+        _mac_jiggle
+    else
+        _linux_jiggle
+    fi
 }
