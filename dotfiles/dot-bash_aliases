@@ -46,6 +46,17 @@ if ! command -v pbcopy >/dev/null 2>&1; then
     fi
 fi
 
+# Same for the mac `open`. xdg-open is the right answer on both X11 and
+# Wayland. Keyed on the OS instead of `command -v open` because older Debian
+# ships an unrelated /usr/bin/open (openvt).
+if [[ "${OSTYPE}" != darwin* ]]; then
+    if command -v xdg-open >/dev/null 2>&1; then
+        alias open='xdg-open'
+    else
+        alias open='echo NO xdg-open INSTALLED. INSTALL xdg-utils'
+    fi
+fi
+
 # nvim does not provide a dedicated executable for diff'ing
 if [[ -x "$(command -v nvim)" ]]; then
     alias vimdiff='nvim -d'
