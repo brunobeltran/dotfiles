@@ -1,2 +1,4 @@
 # shellcheck source=/dev/null
 [[ -f ~/.bashrc ]] && . ~/.bashrc
+
+[[ -f "/Users/bruno/arbor/main/bootstrap/shell_config.sh" ]] && source "/Users/bruno/arbor/main/bootstrap/shell_config.sh" # added by arbor.git bootstrap/setup.sh

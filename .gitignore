@@ -3,6 +3,7 @@
 *.add.spl
 build
 dotfiles/dot-config/*.list
+dotfiles/dot-config/1Password/
 dotfiles/dot-config/caja/
 dotfiles/dot-config/cinnamon*
 dotfiles/dot-config/Code
