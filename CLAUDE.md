@@ -1,9 +1,17 @@
 # Working in this repo
 
-Personal dotfiles plus a single bootstrap script, `install.sh`, that must take a
-fresh Mac or Debian box (possibly without `sudo`) to a fully working setup in
-one run. `mac_setup.sh` is only for macOS `defaults`-style system settings; it
-never installs software.
+Personal dotfiles plus a bootstrap script, `install.sh`, that must take a fresh
+Mac or Debian box (possibly without `sudo`) to a working *dotfiles* setup in one
+run, on both OSes.
+
+**`install.sh` is, by policy, the minimum needed to make the dotfiles work** —
+shell, editor, multiplexer, fonts, their build dependencies, and the few tools
+that have no user-mode install. Nothing else. Desktop applications do not belong
+in it, on either OS.
+
+`mac_setup.sh` is the macOS-only companion: `defaults`-style system settings
+*and* the everyday GUI applications, installed as Homebrew casks. It assumes
+`install.sh` has already run, because it needs `brew` on `PATH`.
 
 The header comment of `install.sh` lists the mechanical rules (build dir, full
 path idempotency checks, `${HOME}`, user-mode installs). Read it before editing.
@@ -14,18 +22,22 @@ The rules below are the decision rules that the header does not spell out.
 Follow these in order. The first rule that applies decides; do not present the
 later ones as alternatives.
 
-1. **One script.** Everything installable goes in `install.sh`, in the
-   OS-specific branch if it is OS-specific. Never propose a new script, a
-   "privileged" script, or a README-only instruction instead.
+1. **Does it belong here at all?** `install.sh` only gets things the dotfiles
+   need in order to work. A desktop application goes in `mac_setup.sh` instead
+   (macOS only; the Debian branch stays minimal and gets no GUI apps). Anything
+   that does belong goes in `install.sh` itself, in the OS-specific branch if it
+   is OS-specific — never a new script, a "privileged" script, or a README-only
+   instruction.
 2. **Use upstream's recommended install method, verbatim.** If the vendor
    documents a one-liner (`curl ... | sh`), use that exact line. Do not
    re-implement what it does (apt repo setup, keyrings, distro detection), do
    not vendor a tarball when a package exists, and do not pick a less-blessed
    variant for "purity" reasons. Check the vendor docs for what is currently
    recommended rather than guessing.
-3. **macOS GUI apps are Homebrew casks**, added directly to the `brew install`
-   lines in the darwin branch. Prefer the cask that wraps the vendor's own
-   standalone `.pkg` over App Store or CLI-only variants.
+3. **macOS GUI apps are Homebrew casks in `mac_setup.sh`**, added as
+   `_install_cask <cask> <App.app>` lines, never in `install.sh`. Prefer the
+   cask that wraps the vendor's own standalone `.pkg` over App Store or
+   CLI-only variants.
 4. **User mode is preferred, not required.** When a tool fundamentally needs
    root (a VPN daemon, a kernel/system extension), install it the blessed way
    with `sudo` anyway. Do not search for a rootless workaround, do not

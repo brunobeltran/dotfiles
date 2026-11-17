@@ -3,6 +3,23 @@
 set -euxo pipefail
 shopt -s nullglob
 
+export PATH="/opt/homebrew/bin:${PATH}"
+
+##
+# macOS applications.
+_install_cask() {
+    local cask=$1 app=$2
+    [[ -d "/Applications/${app}" ]] && return 0
+    brew install --cask "${cask}" ||
+        echo "WARNING: ${cask} did not install. Retry: brew install --cask ${cask}" >&2
+}
+
+_install_cask 1password "1Password.app"
+_install_cask google-chrome "Google Chrome.app"
+_install_cask rectangle "Rectangle.app"
+_install_cask signal "Signal.app"
+_install_cask zed-delta "Delta.app"
+
 ##
 # macOS system settings.
 #
