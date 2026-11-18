@@ -13,6 +13,10 @@ in it, on either OS.
 *and* the everyday GUI applications, installed as Homebrew casks. It assumes
 `install.sh` has already run, because it needs `brew` on `PATH`.
 
+`debian_setup.sh` is its Debian counterpart (written against Linux Mint /
+Cinnamon): desktop applications plus `gsettings`-style desktop settings. It
+also assumes `install.sh` has already run.
+
 The header comment of `install.sh` lists the mechanical rules (build dir, full
 path idempotency checks, `${HOME}`, user-mode installs). Read it before editing.
 The rules below are the decision rules that the header does not spell out.
@@ -23,11 +27,10 @@ Follow these in order. The first rule that applies decides; do not present the
 later ones as alternatives.
 
 1. **Does it belong here at all?** `install.sh` only gets things the dotfiles
-   need in order to work. A desktop application goes in `mac_setup.sh` instead
-   (macOS only; the Debian branch stays minimal and gets no GUI apps). Anything
-   that does belong goes in `install.sh` itself, in the OS-specific branch if it
-   is OS-specific — never a new script, a "privileged" script, or a README-only
-   instruction.
+   need in order to work. A desktop application goes in `mac_setup.sh` and/or
+   `debian_setup.sh` instead. Anything that does belong goes in `install.sh`
+   itself, in the OS-specific branch if it is OS-specific — never a new script,
+   a "privileged" script, or a README-only instruction.
 2. **Use upstream's recommended install method, verbatim.** If the vendor
    documents a one-liner (`curl ... | sh`), use that exact line. Do not
    re-implement what it does (apt repo setup, keyrings, distro detection), do
@@ -37,7 +40,8 @@ later ones as alternatives.
 3. **macOS GUI apps are Homebrew casks in `mac_setup.sh`**, added as
    `_install_cask <cask> <App.app>` lines, never in `install.sh`. Prefer the
    cask that wraps the vendor's own standalone `.pkg` over App Store or
-   CLI-only variants.
+   CLI-only variants. On Debian, a GUI app goes in `debian_setup.sh` using the
+   vendor's documented Linux install (rule 2), user-mode where offered.
 4. **User mode is preferred, not required.** When a tool fundamentally needs
    root (a VPN daemon, a kernel/system extension), install it the blessed way
    with `sudo` anyway. Do not search for a rootless workaround, do not
