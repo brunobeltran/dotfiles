@@ -179,7 +179,7 @@ fi
 ##
 # Install a nice shell prompt.
 if [[ ! -f "${HOME}/.local/bin/starship" ]]; then
-    curl -sS https://starship.rs/install.sh | sh -s -- -b "${HOME}/.local/bin"
+    curl -sS https://starship.rs/install.sh | sh -s -- --yes -b "${HOME}/.local/bin"
 fi
 
 ##
