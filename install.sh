@@ -114,9 +114,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     fonts_install_dir="${HOME}/Library/Fonts"
     tree_sitter_platform="macos-arm64"
     mkdir -p "${HOME}/.local/bin"
-    if [[ ! -e "${HOME}/.local/bin/bash" ]]; then
-        ln -s /opt/homebrew/bin/bash "${HOME}/.local/bin/bash"
-    fi
+    ln -sfn /opt/homebrew/bin/bash "${HOME}/.local/bin/bash"
 
     # Setup deps for neovim source build.
     brew install ninja cmake gettext curl
@@ -143,7 +141,8 @@ elif [[ -f "/etc/debian_version" ]]; then
     fi
     fonts_install_dir="${HOME}/.local/share/fonts"
     tree_sitter_platform="linux-x64"
-    mkdir -p "${HOME}/.local/bin" && ln -s /bin/bash "${HOME}/.local/bin/bash"
+    mkdir -p "${HOME}/.local/bin"
+    ln -sfn /bin/bash "${HOME}/.local/bin/bash"
 fi
 
 ##
@@ -285,7 +284,7 @@ for folder in dotfiles/*; do
             fi
         done
         echo "Adopted ${eventual_link_location} into ${folder}; the original is at ${backup}"
-        ln -s "${real_folder_path}" "${eventual_link_location}"
+        ln -sfn "${real_folder_path}" "${eventual_link_location}"
     fi
 done
 

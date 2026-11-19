@@ -43,4 +43,4 @@ hgcreate git@github.com:forest-neurotech/forest.git
 hgcreate git@github.com:merge-io/mergelabs.git
 hgcreate git@github.com:arbor-neuroscience/arbor.git
 cd ~/mergelabs/main
-ln -s ../../forest/main/butterfly butterfly
+ln -sfn ../../forest/main/butterfly butterfly
