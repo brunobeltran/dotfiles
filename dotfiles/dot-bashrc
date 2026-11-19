@@ -40,7 +40,6 @@ fi
 # set a basic prompt
 PS1='[\u@\h \W]\n\$ '
 
-
 [[ -f "${HOME}/.passwords" ]] && source "${HOME}/.passwords"
 [[ -f "${HOME}/.fzf.bash" ]] && source "${HOME}/.fzf.bash"
 [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
@@ -67,4 +66,4 @@ fi
 
 [[ -f "${HOME}/.local/share/merge_io/dev_niceties/init.sh" ]] && source "${HOME}/.local/share/merge_io/dev_niceties/init.sh"
 
-source "/Users/bruno/.local/share/merge_io/dev_niceties/init.sh"
+source "/home/bruno/.local/share/merge_io/dev_niceties/init.sh"

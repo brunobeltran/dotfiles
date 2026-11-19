@@ -7,6 +7,9 @@ export PATH="/opt/homebrew/bin:${PATH}"
 
 ##
 # macOS applications.
+#
+# Usage: _install_cask google-chrome "Google Chrome.app"
+# Skips an app already in /Applications, including a copy brew did not install.
 _install_cask() {
     local cask=$1 app=$2
     [[ -d "/Applications/${app}" ]] && return 0
