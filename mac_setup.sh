@@ -22,6 +22,7 @@ _install_cask google-chrome "Google Chrome.app"
 _install_cask rectangle "Rectangle.app"
 _install_cask signal "Signal.app"
 _install_cask zed-delta "Delta.app"
+_install_cask kitty "kitty.app"
 
 ##
 # macOS system settings.

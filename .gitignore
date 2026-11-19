@@ -2,6 +2,8 @@
 *.sw*
 *.add.spl
 build
+dotfiles/dot-claude/*
+!dotfiles/dot-claude/CLAUDE.md
 dotfiles/dot-config/*.list
 dotfiles/dot-config/1Password/
 dotfiles/dot-config/caja/

@@ -94,7 +94,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     # flag. This must not be gated on "brew was missing", or a rerun on an
     # already-bootstrapped machine silently gets the BSD tools.
     export PATH="/opt/homebrew/bin:/opt/homebrew/opt/coreutils/libexec/gnubin:${PATH}"
-    brew install bash coreutils kitty wget jq gh git tmux htop rsync perl
+    brew install bash coreutils wget jq gh git tmux htop rsync perl
     # VPN clients. Both casks are the vendors' own standalone .pkg installers
     # (upstream discourages or no longer supports the App Store builds), so
     # brew will prompt for a password to run them. Gate on the .app each pkg
@@ -123,7 +123,8 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 elif [[ -f "/etc/debian_version" ]]; then
     _apt_install_if_needed \
         git rsync tmux htop bash wget perl fontconfig \
-        ninja-build gettext cmake unzip curl build-essential
+        ninja-build gettext cmake unzip curl build-essential \
+        vim gh jq
 
     ##
     # VPN clients. Both need a root daemon, so there is no user-mode install;
